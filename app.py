@@ -136,6 +136,50 @@ def detect():
             'error': str(e)
         }), 500
 
+def read_file_content(file, filename):
+    """Read file content with proper encoding handling.
+
+    For TXT files: tries multiple encodings (utf-8, gbk, gb18030, utf-16, latin1)
+    For DOCX files: uses python-docx to extract text
+
+    Returns the text content or raises an exception if reading fails.
+    """
+    filename_lower = filename.lower()
+
+    if filename_lower.endswith('.txt'):
+        # Try multiple encodings for TXT files
+        encodings = ['utf-8', 'gbk', 'gb18030', 'utf-16', 'latin1']
+
+        # Read raw bytes first
+        raw_content = file.read()
+
+        for encoding in encodings:
+            try:
+                text = raw_content.decode(encoding)
+                # Verify the decoded text is valid (not mostly replacement characters)
+                if encoding != 'utf-8' and '�' in text:
+                    # Check if too many replacement characters
+                    replacement_ratio = text.count('�') / max(len(text), 1)
+                    if replacement_ratio > 0.1:
+                        continue
+                logger.info(f"Successfully decoded {filename} with {encoding} encoding")
+                return text
+            except (UnicodeDecodeError, UnicodeError):
+                continue
+
+        # If all encodings fail, try with errors='ignore'
+        return raw_content.decode('utf-8', errors='ignore')
+
+    elif filename_lower.endswith('.docx'):
+        # For DOCX files, use python-docx
+        doc = Document(file)
+        text = '\n'.join([para.text for para in doc.paragraphs])
+        return text
+
+    else:
+        raise ValueError(f"Unsupported file format: {filename}")
+
+
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     try:
@@ -143,15 +187,10 @@ def upload_file():
             return jsonify({'success': False, 'error': '请选择文件'}), 400
 
         file = request.files['file']
-        filename = file.filename.lower()
+        filename = file.filename
 
-        if filename.endswith('.txt'):
-            text = file.read().decode('utf-8')
-        elif filename.endswith('.docx'):
-            doc = Document(file)
-            text = '\n'.join([para.text for para in doc.paragraphs])
-        else:
-            return jsonify({'success': False, 'error': '不支持的文件格式'}), 400
+        # Use helper function to read file content with proper encoding
+        text = read_file_content(file, filename)
 
         return jsonify({'success': True, 'text': text, 'filename': file.filename})
 
