@@ -93,6 +93,39 @@ def detect_aigc(text):
 
     return ai_prob
 
+def split_by_paragraphs(text):
+    """Split text by newlines"""
+    if not text:
+        return []
+    # Split by various newline patterns and filter empty chunks
+    paragraphs = re.split(r'\n+', text)
+    return [p.strip() for p in paragraphs if p.strip()]
+
+def split_by_sentences(text):
+    """Split text by sentence endings (Chinese and English)"""
+    if not text:
+        return []
+    # Split by Chinese and English sentence endings: 。！？.!?
+    sentences = re.split(r'([。！？.!?])', text)
+    result = []
+    for i in range(0, len(sentences) - 1, 2):
+        sentence = sentences[i]
+        punctuation = sentences[i + 1] if i + 1 < len(sentences) else ""
+        combined = (sentence + punctuation).strip()
+        if combined:
+            result.append(combined)
+    # Handle case where there's no punctuation at end
+    if sentences and sentences[-1].strip():
+        result.append(sentences[-1].strip())
+    return result
+
+def detect_chunk(text):
+    """Detect AIGC probability for a single chunk"""
+    probability = detect_aigc(text)
+    if probability is None:
+        return None
+    return round(probability, 4)
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -233,6 +266,76 @@ def detect_chunks():
             'total_chunks': len(chunks),
             'chunks': results,
             'text_length': len(text)
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/detect-full', methods=['POST'])
+def detect_full():
+    """Detect full text with paragraph or sentence level chunking"""
+    try:
+        data = request.get_json()
+        text = data.get('text', '')
+        mode = data.get('mode', 'paragraph')  # 'paragraph' or 'sentence'
+
+        if not text or not text.strip():
+            return jsonify({'success': False, 'error': '请输入要检测的文本'}), 400
+
+        if mode == 'paragraph':
+            chunks = split_by_paragraphs(text)
+        elif mode == 'sentence':
+            chunks = split_by_sentences(text)
+        else:
+            return jsonify({'success': False, 'error': '无效的mode参数，请使用"paragraph"或"sentence"'}), 400
+
+        if not chunks:
+            return jsonify({'success': False, 'error': '文本分割失败'}), 400
+
+        results = []
+        for i, chunk in enumerate(chunks):
+            probability = detect_chunk(chunk)
+            if probability is not None:
+                results.append({
+                    'index': i,
+                    'text': chunk,
+                    'probability': probability,
+                    'text_length': len(chunk)
+                })
+
+        # Calculate weighted overall probability by text length
+        total_chars = sum(r['text_length'] for r in results)
+        overall_prob = sum(r['probability'] * r['text_length'] for r in results) / total_chars if total_chars > 0 else 0
+
+        return jsonify({
+            'success': True,
+            'overall_probability': round(overall_prob, 4),
+            'mode': mode,
+            'chunks': results,
+            'text_length': len(text)
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/detect-chunk', methods=['POST'])
+def detect_chunk_endpoint():
+    """Detect single chunk text"""
+    try:
+        data = request.get_json()
+        text = data.get('text', '')
+
+        if not text or not text.strip():
+            return jsonify({'success': False, 'error': '请输入要检测的文本'}), 400
+
+        probability = detect_chunk(text)
+
+        if probability is None:
+            return jsonify({'success': False, 'error': '检测失败'}), 500
+
+        return jsonify({
+            'success': True,
+            'probability': probability
         })
 
     except Exception as e:
