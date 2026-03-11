@@ -3,8 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIGC文本检测器</title>
+    <title>AIGC检测</title>
     <style>
+        :root {
+            --bg: #ffffff;
+            --bg-secondary: #f7f7f5;
+            --text: #1a1a1a;
+            --text-secondary: #6e6e6e;
+            --primary: #d97706;
+            --primary-hover: #b45309;
+            --primary-text: #ffffff;
+            --border: #e5e5e5;
+            --muted: #737373;
+            --container: 1200px;
+            --risk-high: #ef4444;
+            --risk-medium: #f59e0b;
+            --risk-low: #22c55e;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,166 +29,353 @@
 
         body {
             font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: #f5f7fa;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            padding: 40px 20px;
+            line-height: 1.5;
         }
 
         .container {
-            width: 100%;
-            max-width: 800px;
+            max-width: var(--container);
+            margin: 0 auto;
+            padding: 0 20px;
         }
 
+        /* Header */
         .header {
-            text-align: center;
-            margin-bottom: 30px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
         }
 
-        .header h1 {
-            font-size: 28px;
-            color: #2c3e50;
-            margin-bottom: 8px;
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .header p {
-            color: #7f8c8d;
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-text);
+            font-weight: bold;
             font-size: 14px;
         }
 
-        .card {
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            padding: 30px;
+        .logo-text {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .btn-import {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-import:hover {
+            background: var(--border);
+        }
+
+        .btn-import svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Main Content */
+        .main {
+            padding: 40px 0;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .chunk-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chunk-selector-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .chunk-size-options {
+            display: flex;
+            gap: 4px;
+        }
+
+        .chunk-size-btn {
+            padding: 6px 14px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chunk-size-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .chunk-size-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--primary-text);
+        }
+
+        /* Input Card */
+        .card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
         }
 
         .input-label {
             display: block;
-            font-size: 16px;
-            color: #2c3e50;
-            margin-bottom: 12px;
+            font-size: 14px;
             font-weight: 500;
+            color: var(--text);
+            margin-bottom: 12px;
         }
 
         textarea {
             width: 100%;
-            height: 200px;
-            padding: 15px;
-            border: 2px solid #e1e8ef;
+            height: 300px;
+            padding: 16px;
+            border: 1px solid var(--border);
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 15px;
             font-family: inherit;
             resize: vertical;
-            transition: border-color 0.3s;
+            transition: border-color 0.2s;
+            background: var(--bg);
+            color: var(--text);
         }
 
         textarea:focus {
             outline: none;
-            border-color: #4A90E2;
+            border-color: var(--primary);
         }
 
         textarea::placeholder {
-            color: #b0bec5;
+            color: var(--muted);
         }
 
         .btn-detect {
-            display: block;
-            width: 100%;
-            padding: 15px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 32px;
             margin-top: 20px;
-            background: #4A90E2;
-            color: white;
+            background: var(--primary);
+            color: var(--primary-text);
             border: none;
             border-radius: 8px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 500;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: background 0.2s;
         }
 
         .btn-detect:hover {
-            background: #357ABD;
+            background: var(--primary-hover);
         }
 
         .btn-detect:disabled {
-            background: #b0bec5;
+            background: var(--muted);
             cursor: not-allowed;
         }
 
-        .result-card {
+        /* Results Section */
+        .results-section {
             display: none;
         }
 
-        .result-card.show {
+        .results-section.show {
             display: block;
         }
 
-        .result-header {
+        .overall-result {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 32px;
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 24px;
         }
 
-        .result-label {
+        .overall-label {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .overall-percentage {
+            font-size: 56px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.2;
+        }
+
+        .overall-percentage.high {
+            color: var(--risk-high);
+        }
+
+        .overall-percentage.medium {
+            color: var(--risk-medium);
+        }
+
+        .overall-percentage.low {
+            color: var(--risk-low);
+        }
+
+        .overall-description {
             font-size: 18px;
-            color: #7f8c8d;
-            margin-bottom: 10px;
-        }
-
-        .result-percentage {
-            font-size: 48px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        .result-text {
-            text-align: center;
-            font-size: 20px;
             font-weight: 500;
-            padding: 15px;
+            margin-top: 12px;
+            padding: 12px 24px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            display: inline-block;
         }
 
-        .result-text.ai {
-            background: #fdf2f2;
-            color: #e74c3c;
-            border: 1px solid #fadbd8;
+        .overall-description.ai {
+            background: #fef2f2;
+            color: var(--risk-high);
         }
 
-        .result-text.human {
-            background: #f2fdf5;
-            color: #27ae60;
-            border: 1px solid #d5f4e3;
+        .overall-description.human {
+            background: #f0fdf4;
+            color: var(--risk-low);
         }
 
-        .progress-bar {
-            height: 12px;
-            background: #e1e8ef;
-            border-radius: 6px;
+        /* Chunk Results */
+        .chunk-results-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        .chunk-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chunk-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .chunk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .chunk-index {
+            font-size: 13px;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .chunk-probability {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .chunk-probability.high {
+            color: var(--risk-high);
+        }
+
+        .chunk-probability.medium {
+            color: var(--risk-medium);
+        }
+
+        .chunk-probability.low {
+            color: var(--risk-low);
+        }
+
+        .chunk-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 12px;
+            word-break: break-all;
+        }
+
+        .chunk-text-truncated {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
         }
 
-        .progress-fill {
+        .chunk-bar {
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .chunk-bar-fill {
             height: 100%;
-            border-radius: 6px;
-            transition: width 0.5s ease, background 0.5s ease;
+            border-radius: 4px;
+            transition: width 0.5s ease;
         }
 
-        .progress-labels {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 8px;
-            font-size: 12px;
-            color: #7f8c8d;
+        .chunk-bar-fill.high {
+            background: var(--risk-high);
         }
 
+        .chunk-bar-fill.medium {
+            background: var(--risk-medium);
+        }
+
+        .chunk-bar-fill.low {
+            background: var(--risk-low);
+        }
+
+        /* Loading */
         .loading {
             display: none;
             text-align: center;
-            padding: 20px;
+            padding: 40px;
         }
 
         .loading.show {
@@ -182,96 +385,247 @@
         .spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid #e1e8ef;
-            border-top-color: #4A90E2;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+            margin: 0 auto 16px;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
+        .loading-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Error */
         .error-message {
             display: none;
-            background: #fdf2f2;
-            color: #e74c3c;
-            padding: 15px;
+            background: #fef2f2;
+            color: var(--risk-high);
+            padding: 16px;
             border-radius: 8px;
             margin-top: 20px;
             text-align: center;
+            font-size: 14px;
         }
 
         .error-message.show {
             display: block;
         }
 
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #e1e8ef;
-            font-size: 14px;
-            color: #7f8c8d;
+        /* Hidden file input */
+        #file-input {
+            display: none;
         }
 
-        .info-row:last-child {
-            border-bottom: none;
+        /* File info */
+        .file-info {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: #166534;
+        }
+
+        .file-info.show {
+            display: flex;
+        }
+
+        .file-info svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .file-remove {
+            margin-left: auto;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #166534;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-remove:hover {
+            color: var(--risk-high);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>AIGC文本检测器</h1>
-            <p>基于深度学习的中文AI生成文本检测工具</p>
-        </div>
-
-        <div class="card">
-            <label class="input-label" for="text-input">请输入要检测的文本：</label>
-            <textarea id="text-input" placeholder="在此粘贴或输入中文文本..."></textarea>
-            <button class="btn-detect" id="detect-btn" onclick="detectText()">检测</button>
-
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>正在分析文本...</p>
-            </div>
-
-            <div class="error-message" id="error-message"></div>
-        </div>
-
-        <div class="card result-card" id="result-card">
-            <div class="result-header">
-                <div class="result-label">AI生成概率</div>
-                <div class="result-percentage" id="result-percentage">0%</div>
-            </div>
-            <div class="result-text" id="result-text"></div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progress-fill"></div>
-            </div>
-            <div class="progress-labels">
-                <span>人类撰写</span>
-                <span>AI生成</span>
-            </div>
-            <div class="info-row" style="margin-top: 20px;">
-                <span>文本长度</span>
-                <span id="text-length">0 字符</span>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">AI</div>
+                    <span class="logo-text">AIGC检测</span>
+                </div>
+                <button class="btn-import" onclick="document.getElementById('file-input').click()">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    导入文件
+                </button>
+                <input type="file" id="file-input" accept=".txt,.docx" onchange="handleFileUpload(event)">
             </div>
         </div>
-    </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <div class="file-info" id="file-info">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span id="file-name"></span>
+                <button class="file-remove" onclick="removeFile()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="controls">
+                <div class="chunk-selector">
+                    <span class="chunk-selector-label">分块大小：</span>
+                    <div class="chunk-size-options">
+                        <button class="chunk-size-btn" data-size="100" onclick="selectChunkSize(100)">100</button>
+                        <button class="chunk-size-btn" data-size="200" onclick="selectChunkSize(200)">200</button>
+                        <button class="chunk-size-btn active" data-size="500" onclick="selectChunkSize(500)">500</button>
+                        <button class="chunk-size-btn" data-size="1000" onclick="selectChunkSize(1000)">1000</button>
+                    </div>
+                    <span class="chunk-selector-label">字</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <label class="input-label" for="text-input">请输入要检测的文本：</label>
+                <textarea id="text-input" placeholder="在此粘贴或输入中文文本..."></textarea>
+                <button class="btn-detect" id="detect-btn" onclick="detectChunks()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    检测
+                </button>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p class="loading-text">正在分析文本...</p>
+                </div>
+
+                <div class="error-message" id="error-message"></div>
+            </div>
+
+            <div class="results-section" id="results-section">
+                <div class="overall-result">
+                    <div class="overall-label">AI生成概率</div>
+                    <div class="overall-percentage" id="overall-percentage">0%</div>
+                    <div class="overall-description" id="overall-description"></div>
+                </div>
+
+                <div class="chunk-results-header">分段检测结果</div>
+                <div class="chunk-list" id="chunk-list"></div>
+            </div>
+        </div>
+    </main>
 
     <script>
-        async function detectText() {
+        let currentChunkSize = 500;
+        let uploadedFileContent = '';
+
+        function selectChunkSize(size) {
+            currentChunkSize = size;
+            document.querySelectorAll('.chunk-size-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.size) === size);
+            });
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const fileName = file.name;
+            const extension = fileName.split('.').pop().toLowerCase();
+
+            try {
+                let content = '';
+
+                if (extension === 'txt') {
+                    content = await file.text();
+                } else if (extension === 'docx') {
+                    // Simple DOCX reading - extract text from DOCX
+                    // For a more complete solution, you'd use a library like mammoth.js
+                    content = await readDocxSimple(file);
+                } else {
+                    showError('不支持的文件格式，请上传 .txt 或 .docx 文件');
+                    return;
+                }
+
+                uploadedFileContent = content;
+                document.getElementById('text-input').value = content;
+                document.getElementById('file-name').textContent = fileName;
+                document.getElementById('file-info').classList.add('show');
+                hideError();
+
+            } catch (error) {
+                console.error('File read error:', error);
+                showError('文件读取失败，请重试');
+            }
+
+            // Reset input to allow re-uploading same file
+            event.target.value = '';
+        }
+
+        async function readDocxSimple(file) {
+            // Basic DOCX reading - reads raw text from document
+            // This is a simplified approach; for production, use mammoth.js or similar
+            const arrayBuffer = await file.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+
+            // Try to extract text from the DOCX XML content
+            // DOCX files are ZIP archives containing XML
+            const textDecoder = new TextDecoder('utf-8', { fatal: false });
+            let content = textDecoder.decode(uint8Array);
+
+            // Extract text between XML tags (simplified)
+            const textMatches = content.match(/>([^<>]+)</g);
+            if (textMatches) {
+                content = textMatches
+                    .map(m => m.replace(/^>/, '').replace(/<$/, ''))
+                    .filter(t => t.trim().length > 0)
+                    .join(' ');
+            }
+
+            return content;
+        }
+
+        function removeFile() {
+            uploadedFileContent = '';
+            document.getElementById('text-input').value = '';
+            document.getElementById('file-info').classList.remove('show');
+            document.getElementById('file-name').textContent = '';
+        }
+
+        async function detectChunks() {
             const text = document.getElementById('text-input').value.trim();
             const btn = document.getElementById('detect-btn');
             const loading = document.getElementById('loading');
             const errorMsg = document.getElementById('error-message');
-            const resultCard = document.getElementById('result-card');
+            const resultsSection = document.getElementById('results-section');
 
             // Reset UI
-            errorMsg.classList.remove('show');
-            resultCard.classList.remove('show');
+            hideError();
+            resultsSection.classList.remove('show');
 
             if (!text) {
                 showError('请输入要检测的文本');
@@ -283,12 +637,15 @@
             loading.classList.add('show');
 
             try {
-                const response = await fetch('/api/detect', {
+                const response = await fetch('/api/detect-chunks', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ text })
+                    body: JSON.stringify({
+                        text: text,
+                        chunk_size: currentChunkSize
+                    })
                 });
 
                 const data = await response.json();
@@ -298,8 +655,8 @@
                     return;
                 }
 
-                // Display result
-                displayResult(data);
+                // Display results
+                renderResults(data);
 
             } catch (error) {
                 showError('网络错误，请检查服务器是否运行');
@@ -310,31 +667,75 @@
             }
         }
 
-        function displayResult(data) {
-            const resultCard = document.getElementById('result-card');
-            const percentage = document.getElementById('result-percentage');
-            const resultText = document.getElementById('result-text');
-            const progressFill = document.getElementById('progress-fill');
-            const textLength = document.getElementById('text-length');
+        function renderResults(data) {
+            const resultsSection = document.getElementById('results-section');
+            const overallPercentage = document.getElementById('overall-percentage');
+            const overallDescription = document.getElementById('overall-description');
+            const chunkList = document.getElementById('chunk-list');
 
-            const prob = data.probability * 100;
-            percentage.textContent = prob.toFixed(1) + '%';
+            // Overall result
+            const overallProb = data.overall_probability * 100;
+            const riskLevel = getRiskLevel(overallProb);
 
-            // Set result text and color
-            if (data.probability > 0.5) {
-                resultText.textContent = data.result;
-                resultText.className = 'result-text ai';
-                progressFill.style.background = `linear-gradient(90deg, #f39c12 0%, #e74c3c ${prob}%)`;
+            overallPercentage.textContent = overallProb.toFixed(1) + '%';
+            overallPercentage.className = 'overall-percentage ' + riskLevel;
+
+            if (overallProb > 50) {
+                overallDescription.textContent = '可能是AI生成文本';
+                overallDescription.className = 'overall-description ai';
             } else {
-                resultText.textContent = data.result;
-                resultText.className = 'result-text human';
-                progressFill.style.background = `linear-gradient(90deg, #27ae60 0%, #f39c12 ${prob}%)`;
+                overallDescription.textContent = '可能是人类撰写文本';
+                overallDescription.className = 'overall-description human';
             }
 
-            progressFill.style.width = prob + '%';
-            textLength.textContent = data.text_length + ' 字符';
+            // Chunk results
+            chunkList.innerHTML = '';
 
-            resultCard.classList.add('show');
+            if (data.chunks && data.chunks.length > 0) {
+                data.chunks.forEach((chunk, index) => {
+                    const chunkProb = chunk.probability * 100;
+                    const chunkRisk = getRiskLevel(chunkProb);
+
+                    const chunkItem = document.createElement('div');
+                    chunkItem.className = 'chunk-item';
+                    chunkItem.innerHTML = `
+                        <div class="chunk-header">
+                            <span class="chunk-index">段落 ${index + 1}</span>
+                            <span class="chunk-probability ${chunkRisk}">${chunkProb.toFixed(1)}%</span>
+                        </div>
+                        <div class="chunk-text chunk-text-truncated">${escapeHtml(chunk.text)}</div>
+                        <div class="chunk-bar">
+                            <div class="chunk-bar-fill ${chunkRisk}" style="width: ${chunkProb}%"></div>
+                        </div>
+                    `;
+                    chunkList.appendChild(chunkItem);
+                });
+            }
+
+            resultsSection.classList.add('show');
+
+            // Scroll to results
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function getRiskLevel(probability) {
+            if (probability > 50) {
+                return 'high';
+            } else if (probability >= 20) {
+                return 'medium';
+            } else {
+                return 'low';
+            }
+        }
+
+        function getRiskColor(probability) {
+            if (probability > 50) {
+                return '#ef4444';
+            } else if (probability >= 20) {
+                return '#f59e0b';
+            } else {
+                return '#22c55e';
+            }
         }
 
         function showError(message) {
@@ -343,10 +744,21 @@
             errorMsg.classList.add('show');
         }
 
+        function hideError() {
+            const errorMsg = document.getElementById('error-message');
+            errorMsg.classList.remove('show');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         // Allow Ctrl+Enter to submit
         document.getElementById('text-input').addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'Enter') {
-                detectText();
+                detectChunks();
             }
         });
     </script>
