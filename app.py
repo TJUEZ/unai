@@ -93,6 +93,14 @@ def detect_aigc(text):
 
     return ai_prob
 
+def split_by_original_paragraphs(text):
+    """Split text by original newlines - keep original paragraph structure"""
+    if not text:
+        return []
+    # Split by newlines only, keep empty lines as separators
+    paragraphs = re.split(r'\n+', text)
+    return [p.strip() for p in paragraphs if p.strip()]
+
 def split_by_paragraphs(text, min_chunk_size=100):
     """Split text by newlines, merging small paragraphs into larger chunks"""
     if not text:
@@ -337,13 +345,21 @@ def detect_full():
         data = request.get_json()
         text = data.get('text', '')
         mode = data.get('mode', 'paragraph')  # 'paragraph' or 'sentence'
-        chunk_size = data.get('chunk_size', 100)  # Minimum chunk size
+        chunk_size = data.get('chunk_size', 'original')  # 'original' or number
 
         if not text or not text.strip():
             return jsonify({'success': False, 'error': '请输入要检测的文本'}), 400
 
-        if mode == 'paragraph':
-            chunks = split_by_paragraphs(text, min_chunk_size=chunk_size)
+        if chunk_size == 'original':
+            # Split by original paragraphs (newlines only, no merging)
+            chunks = split_by_original_paragraphs(text)
+            mode = 'original'
+        elif mode == 'paragraph':
+            try:
+                min_size = int(chunk_size) if chunk_size else 100
+            except:
+                min_size = 100
+            chunks = split_by_paragraphs(text, min_chunk_size=min_size)
         elif mode == 'sentence':
             chunks = split_by_sentences(text)
         else:

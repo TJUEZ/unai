@@ -730,9 +730,9 @@
                 <span class="logo-text">AIGC检测</span>
             </div>
             <div class="chunk-size-selector">
-                <span class="chunk-size-label">分块大小:</span>
-                <button class="chunk-size-btn" data-size="100" onclick="setChunkSize(100)">100字</button>
-                <button class="chunk-size-btn active" data-size="200" onclick="setChunkSize(200)">200字</button>
+                <span class="chunk-size-label">分块方式:</span>
+                <button class="chunk-size-btn active" data-size="original" onclick="setChunkSize('original')">原文段落</button>
+                <button class="chunk-size-btn" data-size="200" onclick="setChunkSize(200)">200字</button>
                 <button class="chunk-size-btn" data-size="500" onclick="setChunkSize(500)">500字</button>
                 <button class="chunk-size-btn" data-size="1000" onclick="setChunkSize(1000)">1000字</button>
             </div>
@@ -860,8 +860,10 @@
 
                 document.addEventListener('mousemove', function(e) {
                     if (!isResizing) return;
+                    // Fix: dragging right = increase width, dragging left = decrease width
                     const diff = e.pageX - startX;
-                    const newWidth = Math.min(Math.max(startWidth + diff, 280), 600);
+                    // Increase max width to allow larger sidebar like VSCode
+                    const newWidth = Math.max(startWidth + diff, 280);
                     sidebar.style.width = newWidth + 'px';
                 });
 
@@ -880,7 +882,11 @@
 
             // Update UI
             document.querySelectorAll('.chunk-size-btn').forEach(btn => {
-                btn.classList.toggle('active', parseInt(btn.dataset.size) === size);
+                if (size === 'original') {
+                    btn.classList.toggle('active', btn.dataset.size === 'original');
+                } else {
+                    btn.classList.toggle('active', parseInt(btn.dataset.size) === size);
+                }
             });
 
             // Re-run detection if we have text
