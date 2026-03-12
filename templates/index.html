@@ -342,15 +342,100 @@
             overflow: hidden;
         }
 
-        /* Sidebar (Right) */
+        /* Sidebar (Right) - Resizable */
         .sidebar {
-            width: 320px;
+            width: 380px;
+            min-width: 280px;
+            max-width: 600px;
             background: var(--bg-secondary);
             border-left: 1px solid var(--border);
             padding: 20px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
+            resize: horizontal;
+            overflow: auto;
+        }
+
+        /* Resize handle indicator */
+        .sidebar::after {
+            content: '⋮⋮';
+            position: absolute;
+            left: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: col-resize;
+            color: var(--border);
+            font-size: 12px;
+            padding: 10px 2px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            z-index: 10;
+        }
+
+        .sidebar:hover::after {
+            color: var(--primary);
+            background: var(--bg);
+        }
+
+        /* Text History */
+        .text-history {
+            margin-top: 16px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+        }
+
+        .text-history-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .text-history-title svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .history-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .history-item .history-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .history-item .history-prob {
+            font-weight: 500;
+        }
+
+        .history-item .history-prob.high { color: #dc2626; }
+        .history-item .history-prob.medium { color: #d97706; }
+        .history-item .history-prob.low { color: #16a34a; }
+
+        .history-item .history-text {
+            color: var(--text);
+            word-break: break-all;
+        }
+
+        .history-empty {
+            color: var(--muted);
+            font-size: 13px;
+            text-align: center;
+            padding: 12px;
         }
 
         .sidebar-empty {
@@ -755,6 +840,7 @@
         let selectedChunkIndex = -1;
         let originalText = '';
         let debounceTimer = null;
+        let textHistory = []; // Store text revision history
 
         // Set chunk size
         function setChunkSize(size) {
@@ -1062,10 +1148,52 @@
                         <div class="detecting-spinner"></div>
                         <span>检测中...</span>
                     </div>
+
+                    <!-- Text History -->
+                    <div class="text-history" id="text-history">
+                        <div class="text-history-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            修改历史
+                        </div>
+                        <div id="history-list"></div>
+                    </div>
                 `;
             } else {
                 sidebar.innerHTML = detailHtml;
             }
+
+            // Render history
+            renderHistory();
+        }
+
+        // Render text history
+        function renderHistory() {
+            const historyList = document.getElementById('history-list');
+            if (!historyList) return;
+
+            if (textHistory.length === 0) {
+                historyList.innerHTML = '<div class="history-empty">暂无修改历史</div>';
+                return;
+            }
+
+            let html = '';
+            textHistory.forEach((item, index) => {
+                const riskLevel = getRiskLevel(item.probability * 100);
+                const previewText = item.text.length > 50 ? item.text.substring(0, 50) + '...' : item.text;
+                html += `
+                    <div class="history-item">
+                        <div class="history-meta">
+                            <span>版本 ${index + 1}</span>
+                            <span class="history-prob ${riskLevel}">${(item.probability * 100).toFixed(1)}% AI率</span>
+                        </div>
+                        <div class="history-text">${escapeHtml(previewText)}</div>
+                    </div>
+                `;
+            });
+
+            historyList.innerHTML = html;
         }
 
         // Handle editor input with debounce
@@ -1098,6 +1226,21 @@
                 return;
             }
 
+            // Save to history before detecting
+            if (selectedChunkIndex >= 0 && selectedChunkIndex < chunksData.length) {
+                const oldChunk = chunksData[selectedChunkIndex];
+                // Add to history if text changed
+                if (oldChunk.text !== newText) {
+                    textHistory.unshift({
+                        text: oldChunk.text,
+                        probability: oldChunk.probability,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                    // Keep only last 5 history items
+                    if (textHistory.length > 5) textHistory.pop();
+                }
+            }
+
             try {
                 const response = await fetch('/api/detect-chunk', {
                     method: 'POST',
@@ -1126,6 +1269,9 @@
                         probValue.textContent = (data.probability * 100).toFixed(1) + '%';
                         probValue.className = 'prob-value ' + riskLevel;
                     }
+
+                    // Render history
+                    renderHistory();
 
                     // Re-render chunks and update stats
                     renderChunks();
