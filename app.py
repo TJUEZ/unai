@@ -93,13 +93,63 @@ def detect_aigc(text):
 
     return ai_prob
 
-def split_by_paragraphs(text):
-    """Split text by newlines"""
+def split_by_paragraphs(text, min_chunk_size=100):
+    """Split text by newlines, merging small paragraphs into larger chunks"""
     if not text:
         return []
-    # Split by various newline patterns and filter empty chunks
-    paragraphs = re.split(r'\n+', text)
-    return [p.strip() for p in paragraphs if p.strip()]
+
+    # First split by newlines
+    raw_paragraphs = re.split(r'\n+', text)
+    paragraphs = [p.strip() for p in raw_paragraphs if p.strip()]
+
+    if not paragraphs:
+        return []
+
+    # Merge small paragraphs into larger chunks
+    chunks = []
+    current_chunk = ""
+
+    for para in paragraphs:
+        if len(current_chunk) + len(para) <= min_chunk_size:
+            # Add to current chunk
+            if current_chunk:
+                current_chunk += "\n" + para
+            else:
+                current_chunk = para
+        else:
+            # Current chunk is big enough, save it
+            if current_chunk:
+                chunks.append(current_chunk)
+
+            # If this paragraph alone is bigger than min_chunk_size, use it directly
+            if len(para) >= min_chunk_size:
+                chunks.append(para)
+                current_chunk = ""
+            else:
+                # Start new chunk with this paragraph
+                current_chunk = para
+
+    # Don't forget the last chunk
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    # If we still have tiny chunks, merge them all
+    if chunks and any(len(c) < min_chunk_size for c in chunks):
+        merged = "\n".join(chunks)
+        # Split into larger chunks
+        words = merged.split()
+        current = ""
+        for word in words:
+            if len(current) + len(word) + 1 <= min_chunk_size:
+                current += " " + word if current else word
+            else:
+                if current:
+                    chunks.append(current)
+                current = word
+        if current:
+            chunks.append(current)
+
+    return chunks
 
 def split_by_sentences(text):
     """Split text by sentence endings (Chinese and English)"""
