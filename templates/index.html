@@ -845,21 +845,25 @@
         (function() {
             const resizeHandle = document.getElementById('resize-handle');
             const sidebar = document.getElementById('sidebar');
-            const container = document.querySelector('.container');
             let isResizing = false;
+            let startX = 0;
+            let startWidth = 0;
 
-            if (resizeHandle && sidebar && container) {
+            if (resizeHandle && sidebar) {
                 resizeHandle.addEventListener('mousedown', function(e) {
                     isResizing = true;
+                    startX = e.pageX;
+                    startWidth = sidebar.offsetWidth;
                     resizeHandle.classList.add('dragging');
                     e.preventDefault();
+                    e.stopPropagation();
                 });
 
                 document.addEventListener('mousemove', function(e) {
                     if (!isResizing) return;
-                    // Calculate new width based on mouse position relative to container
-                    const containerRect = container.getBoundingClientRect();
-                    const newWidth = e.clientX - containerRect.left;
+                    // Calculate delta from starting position
+                    const delta = e.pageX - startX;
+                    const newWidth = startWidth + delta;
                     // Minimum width 280px
                     sidebar.style.width = Math.max(newWidth, 280) + 'px';
                 });
