@@ -847,24 +847,21 @@
             const sidebar = document.getElementById('sidebar');
             const container = document.querySelector('.container');
             let isResizing = false;
-            let startX, startWidth;
 
-            if (resizeHandle && sidebar) {
+            if (resizeHandle && sidebar && container) {
                 resizeHandle.addEventListener('mousedown', function(e) {
                     isResizing = true;
-                    startX = e.pageX;
-                    startWidth = parseInt(document.defaultView.getComputedStyle(sidebar).width, 10);
                     resizeHandle.classList.add('dragging');
                     e.preventDefault();
                 });
 
                 document.addEventListener('mousemove', function(e) {
                     if (!isResizing) return;
-                    // Fix: dragging right = increase width, dragging left = decrease width
-                    const diff = e.pageX - startX;
-                    // Increase max width to allow larger sidebar like VSCode
-                    const newWidth = Math.max(startWidth + diff, 280);
-                    sidebar.style.width = newWidth + 'px';
+                    // Calculate new width based on mouse position relative to container
+                    const containerRect = container.getBoundingClientRect();
+                    const newWidth = e.clientX - containerRect.left;
+                    // Minimum width 280px
+                    sidebar.style.width = Math.max(newWidth, 280) + 'px';
                 });
 
                 document.addEventListener('mouseup', function() {
