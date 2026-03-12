@@ -259,6 +259,15 @@ def read_file_content(file, filename):
         text = '\n'.join([para.text for para in doc.paragraphs])
         return text
 
+    elif filename_lower.endswith('.pdf'):
+        # For PDF files, use pypdf
+        from pypdf import PdfReader
+        pdf_reader = PdfReader(file)
+        text_parts = []
+        for page in pdf_reader.pages:
+            text_parts.append(page.extract_text())
+        return '\n'.join(text_parts)
+
     else:
         raise ValueError(f"Unsupported file format: {filename}")
 
