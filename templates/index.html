@@ -353,29 +353,26 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            resize: horizontal;
             overflow: auto;
+            position: relative;
         }
 
-        /* Resize handle indicator */
-        .sidebar::after {
-            content: '⋮⋮';
+        /* Resize handle */
+        .resize-handle {
             position: absolute;
-            left: -12px;
-            top: 50%;
-            transform: translateY(-50%);
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
             cursor: col-resize;
-            color: var(--border);
-            font-size: 12px;
-            padding: 10px 2px;
-            background: var(--bg-secondary);
-            border-radius: 4px;
-            z-index: 10;
+            background: transparent;
+            z-index: 100;
+            transition: background 0.2s;
         }
 
-        .sidebar:hover::after {
-            color: var(--primary);
-            background: var(--bg);
+        .resize-handle:hover,
+        .resize-handle.dragging {
+            background: var(--primary);
         }
 
         /* Text History */
@@ -782,6 +779,8 @@
 
         <!-- Sidebar (Right) -->
         <div class="sidebar" id="sidebar">
+            <div class="resize-handle" id="resize-handle"></div>
+
             <!-- Text Input Section -->
             <div class="text-input-section" id="text-input-section">
                 <div class="text-input-label">输入或粘贴文本</div>
@@ -841,6 +840,39 @@
         let originalText = '';
         let debounceTimer = null;
         let textHistory = []; // Store text revision history
+
+        // Sidebar resize functionality
+        (function() {
+            const resizeHandle = document.getElementById('resize-handle');
+            const sidebar = document.getElementById('sidebar');
+            const container = document.querySelector('.container');
+            let isResizing = false;
+            let startX, startWidth;
+
+            if (resizeHandle && sidebar) {
+                resizeHandle.addEventListener('mousedown', function(e) {
+                    isResizing = true;
+                    startX = e.pageX;
+                    startWidth = parseInt(document.defaultView.getComputedStyle(sidebar).width, 10);
+                    resizeHandle.classList.add('dragging');
+                    e.preventDefault();
+                });
+
+                document.addEventListener('mousemove', function(e) {
+                    if (!isResizing) return;
+                    const diff = e.pageX - startX;
+                    const newWidth = Math.min(Math.max(startWidth + diff, 280), 600);
+                    sidebar.style.width = newWidth + 'px';
+                });
+
+                document.addEventListener('mouseup', function() {
+                    if (isResizing) {
+                        isResizing = false;
+                        resizeHandle.classList.remove('dragging');
+                    }
+                });
+            }
+        })();
 
         // Set chunk size
         function setChunkSize(size) {
