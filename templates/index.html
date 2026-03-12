@@ -92,6 +92,42 @@
             border-radius: 8px;
         }
 
+        /* Chunk Size Selector */
+        .chunk-size-selector {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-secondary);
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .chunk-size-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            padding: 0 8px;
+        }
+
+        .chunk-size-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chunk-size-btn:hover {
+            background: var(--border);
+        }
+
+        .chunk-size-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
         .mode-btn {
             padding: 6px 16px;
             background: transparent;
@@ -584,9 +620,12 @@
                 <div class="logo-icon">AI</div>
                 <span class="logo-text">AIGC检测</span>
             </div>
-            <div class="mode-switch">
-                <button class="mode-btn active" data-mode="paragraph" onclick="switchMode('paragraph')">段落级</button>
-                <!-- <button class="mode-btn" data-mode="sentence" onclick="switchMode('sentence')">句子级</button> -->
+            <div class="chunk-size-selector">
+                <span class="chunk-size-label">分块大小:</span>
+                <button class="chunk-size-btn" data-size="100" onclick="setChunkSize(100)">100字</button>
+                <button class="chunk-size-btn active" data-size="200" onclick="setChunkSize(200)">200字</button>
+                <button class="chunk-size-btn" data-size="500" onclick="setChunkSize(500)">500字</button>
+                <button class="chunk-size-btn" data-size="1000" onclick="setChunkSize(1000)">1000字</button>
             </div>
             <div class="file-info" id="file-info">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -676,10 +715,26 @@
     <script>
         // Global state
         let currentMode = 'paragraph';
+        let chunkSize = 200; // Default chunk size
         let chunksData = [];
         let selectedChunkIndex = -1;
         let originalText = '';
         let debounceTimer = null;
+
+        // Set chunk size
+        function setChunkSize(size) {
+            chunkSize = size;
+
+            // Update UI
+            document.querySelectorAll('.chunk-size-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.size) === size);
+            });
+
+            // Re-run detection if we have text
+            if (originalText) {
+                runDetection();
+            }
+        }
 
         // Switch between paragraph and sentence mode
         function switchMode(mode) {
@@ -828,7 +883,8 @@
                     },
                     body: JSON.stringify({
                         text: originalText,
-                        mode: currentMode
+                        mode: currentMode,
+                        chunk_size: chunkSize
                     })
                 });
 

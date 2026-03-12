@@ -328,12 +328,13 @@ def detect_full():
         data = request.get_json()
         text = data.get('text', '')
         mode = data.get('mode', 'paragraph')  # 'paragraph' or 'sentence'
+        chunk_size = data.get('chunk_size', 100)  # Minimum chunk size
 
         if not text or not text.strip():
             return jsonify({'success': False, 'error': '请输入要检测的文本'}), 400
 
         if mode == 'paragraph':
-            chunks = split_by_paragraphs(text)
+            chunks = split_by_paragraphs(text, min_chunk_size=chunk_size)
         elif mode == 'sentence':
             chunks = split_by_sentences(text)
         else:
