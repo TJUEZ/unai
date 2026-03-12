@@ -841,42 +841,6 @@
         let debounceTimer = null;
         let textHistory = []; // Store text revision history
 
-        // Sidebar resize functionality
-        (function() {
-            const resizeHandle = document.getElementById('resize-handle');
-            const sidebar = document.getElementById('sidebar');
-            let isResizing = false;
-            let startX = 0;
-            let startWidth = 0;
-
-            if (resizeHandle && sidebar) {
-                resizeHandle.addEventListener('mousedown', function(e) {
-                    isResizing = true;
-                    startX = e.pageX;
-                    startWidth = sidebar.offsetWidth;
-                    resizeHandle.classList.add('dragging');
-                    e.preventDefault();
-                    e.stopPropagation();
-                });
-
-                document.addEventListener('mousemove', function(e) {
-                    if (!isResizing) return;
-                    // Calculate delta from starting position
-                    const delta = e.pageX - startX;
-                    const newWidth = startWidth + delta;
-                    // Minimum width 280px
-                    sidebar.style.width = Math.max(newWidth, 280) + 'px';
-                });
-
-                document.addEventListener('mouseup', function() {
-                    if (isResizing) {
-                        isResizing = false;
-                        resizeHandle.classList.remove('dragging');
-                    }
-                });
-            }
-        })();
-
         // Set chunk size
         function setChunkSize(size) {
             chunkSize = size;
@@ -973,7 +937,10 @@
                 </div>
             `;
 
-            document.getElementById('sidebar').innerHTML = `
+            // Preserve resize handle when resetting sidebar
+            const sidebar = document.getElementById('sidebar');
+            const currentWidth = sidebar.style.width || getComputedStyle(sidebar).width;
+            sidebar.innerHTML = '<div class="resize-handle" id="resize-handle"></div>' + `
                 <div class="sidebar-empty" id="sidebar-empty">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
@@ -981,6 +948,8 @@
                     <p>点击左侧文本块查看详情</p>
                 </div>
             `;
+            sidebar.style.width = currentWidth;
+            attachResizeHandler();
 
             updateOverallStats();
         }
@@ -1123,88 +1092,107 @@
             renderEditor();
         }
 
+        // Resize handler - separate function for reuse
+        function attachResizeHandler() {
+            const resizeHandle = document.getElementById('resize-handle');
+            const sidebar = document.getElementById('sidebar');
+            if (!resizeHandle || !sidebar) return;
+
+            let isResizing = false;
+            let startX = 0;
+            let startWidth = 0;
+
+            resizeHandle.addEventListener('mousedown', function(e) {
+                isResizing = true;
+                startX = e.pageX;
+                startWidth = sidebar.offsetWidth;
+                resizeHandle.classList.add('dragging');
+                e.preventDefault();
+                e.stopPropagation();
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (!isResizing) return;
+                const delta = e.pageX - startX;
+                const newWidth = startWidth + delta;
+                sidebar.style.width = Math.max(newWidth, 280) + 'px';
+            });
+
+            document.addEventListener('mouseup', function() {
+                if (isResizing) {
+                    isResizing = false;
+                    resizeHandle.classList.remove('dragging');
+                }
+            });
+        }
+
+        // Initialize resize handler on page load
+        attachResizeHandler();
+
         // Render editor in right panel
         function renderEditor() {
             const sidebar = document.getElementById('sidebar');
-            const sidebarEmpty = document.getElementById('sidebar-empty');
-            const chunkDetail = document.getElementById('chunk-detail');
+            if (!sidebar) return;
+
+            // Save current width before re-rendering
+            const currentWidth = sidebar.style.width || getComputedStyle(sidebar).width;
+
+            // Always preserve the resize handle
+            const resizeHandleHtml = '<div class="resize-handle" id="resize-handle"></div>';
 
             if (selectedChunkIndex < 0 || selectedChunkIndex >= chunksData.length) {
-                if (sidebarEmpty) {
-                    sidebar.innerHTML = `
-                        <div class="sidebar-empty" id="sidebar-empty">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
-                            </svg>
-                            <p>点击左侧文本块查看详情</p>
-                        </div>
-                    `;
-                }
-                return;
-            }
-
-            const chunk = chunksData[selectedChunkIndex];
-            const riskLevel = getRiskLevel(chunk.probability * 100);
-            const typeLabel = currentMode === 'paragraph' ? '段落' : '句子';
-
-            // Remove old sidebar-empty if exists and add chunk-detail
-            if (sidebarEmpty) {
-                sidebar.innerHTML = '';
-            }
-
-            let detailHtml = `
-                <div class="chunk-detail show" id="chunk-detail">
-                    <div class="chunk-detail-header">
-                        <div class="chunk-detail-title">${typeLabel} ${selectedChunkIndex + 1}</div>
-                        <div class="chunk-detail-prob">
-                            <span class="prob-value ${riskLevel}" id="chunk-detail-prob">${(chunk.probability * 100).toFixed(1)}%</span>
-                            <span class="prob-label">AI生成概率</span>
-                        </div>
-                    </div>
-                    <div class="chunk-editor-label">编辑文本（自动重新检测）</div>
-                    <textarea class="chunk-editor" id="chunk-editor" oninput="onEditorInput()">${escapeHtml(chunk.text)}</textarea>
-                    <div class="detecting-indicator" id="detecting-indicator">
-                        <div class="detecting-spinner"></div>
-                        <span>检测中...</span>
-                    </div>
-                </div>
-            `;
-
-            // Check if chunk-detail already exists
-            const existingDetail = document.getElementById('chunk-detail');
-            if (existingDetail) {
-                existingDetail.innerHTML = `
-                    <div class="chunk-detail-header">
-                        <div class="chunk-detail-title">${typeLabel} ${selectedChunkIndex + 1}</div>
-                        <div class="chunk-detail-prob">
-                            <span class="prob-value ${riskLevel}" id="chunk-detail-prob">${(chunk.probability * 100).toFixed(1)}%</span>
-                            <span class="prob-label">AI生成概率</span>
-                        </div>
-                    </div>
-                    <div class="chunk-editor-label">编辑文本（自动重新检测）</div>
-                    <textarea class="chunk-editor" id="chunk-editor" oninput="onEditorInput()">${escapeHtml(chunk.text)}</textarea>
-                    <div class="detecting-indicator" id="detecting-indicator">
-                        <div class="detecting-spinner"></div>
-                        <span>检测中...</span>
-                    </div>
-
-                    <!-- Text History -->
-                    <div class="text-history" id="text-history">
-                        <div class="text-history-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            修改历史
-                        </div>
-                        <div id="history-list"></div>
+                sidebar.innerHTML = resizeHandleHtml + `
+                    <div class="sidebar-empty" id="sidebar-empty">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
+                        </svg>
+                        <p>点击左侧文本块查看详情</p>
                     </div>
                 `;
             } else {
-                sidebar.innerHTML = detailHtml;
+                const chunk = chunksData[selectedChunkIndex];
+                const riskLevel = getRiskLevel(chunk.probability * 100);
+                const typeLabel = currentMode === 'paragraph' ? '段落' : '句子';
+
+                sidebar.innerHTML = resizeHandleHtml + `
+                    <div class="chunk-detail show" id="chunk-detail">
+                        <div class="chunk-detail-header">
+                            <div class="chunk-detail-title">${typeLabel} ${selectedChunkIndex + 1}</div>
+                            <div class="chunk-detail-prob">
+                                <span class="prob-value ${riskLevel}" id="chunk-detail-prob">${(chunk.probability * 100).toFixed(1)}%</span>
+                                <span class="prob-label">AI生成概率</span>
+                            </div>
+                        </div>
+                        <div class="chunk-editor-label">编辑文本（自动重新检测）</div>
+                        <textarea class="chunk-editor" id="chunk-editor" oninput="onEditorInput()">${escapeHtml(chunk.text)}</textarea>
+                        <div class="detecting-indicator" id="detecting-indicator">
+                            <div class="detecting-spinner"></div>
+                            <span>检测中...</span>
+                        </div>
+                        <!-- Text History -->
+                        <div class="text-history" id="text-history">
+                            <div class="text-history-title">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                修改历史
+                            </div>
+                            <div id="history-list"></div>
+                        </div>
+                    </div>
+                `;
+
+                // Render history
+                renderHistory();
             }
 
-            // Render history
-            renderHistory();
+            // Restore width after re-rendering
+            if (currentWidth) {
+                sidebar.style.width = currentWidth;
+            }
+
+            // Re-attach resize event listeners
+            attachResizeHandler();
         }
 
         // Render text history
