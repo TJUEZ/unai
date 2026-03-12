@@ -172,35 +172,71 @@
             font-size: 16px;
         }
 
-        /* Chunk Card */
-        .chunk-card {
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 12px;
+        /* Reader content - continuous text display */
+        .reader-content {
+            font-size: 16px;
+            line-height: 1.8;
+            color: var(--text);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .reader-content .paragraph {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.2s;
-            border: 2px solid transparent;
+            transition: all 0.15s ease;
+            border-left: 3px solid transparent;
         }
 
-        .chunk-card:hover {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        .reader-content .paragraph:hover {
+            background: #f3f4f6 !important;
         }
 
-        .chunk-card.selected {
-            border-color: var(--primary);
-            box-shadow: 0 2px 12px rgba(217, 119, 6, 0.2);
+        .reader-content .paragraph.selected {
+            border-left-color: var(--primary);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
         }
 
-        .chunk-card.high {
-            background: var(--risk-high);
+        .reader-content .paragraph.high {
+            background: rgba(254, 226, 226, 0.5);
+            border-left-color: #ef4444;
         }
 
-        .chunk-card.medium {
-            background: var(--risk-medium);
+        .reader-content .paragraph.medium {
+            background: rgba(254, 243, 199, 0.5);
+            border-left-color: #f59e0b;
         }
 
-        .chunk-card.low {
-            background: var(--risk-low);
+        .reader-content .paragraph.low {
+            background: rgba(220, 252, 231, 0.5);
+            border-left-color: #22c55e;
+        }
+
+        .reader-content .paragraph .prob-badge {
+            display: inline-block;
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+            vertical-align: middle;
+            font-weight: 500;
+        }
+
+        .reader-content .paragraph.high .prob-badge {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .reader-content .paragraph.medium .prob-badge {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .reader-content .paragraph.low .prob-badge {
+            background: #dcfce7;
+            color: #16a34a;
         }
 
         .chunk-card-header {
@@ -269,6 +305,53 @@
             height: 48px;
             margin-bottom: 12px;
             opacity: 0.5;
+        }
+
+        /* Text Input Section */
+        .text-input-section {
+            padding: 16px;
+        }
+
+        .text-input-label {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+
+        .text-input-area {
+            width: 100%;
+            height: 200px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            line-height: 1.6;
+            resize: vertical;
+        }
+
+        .text-input-area:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn-detect-sidebar {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-detect-sidebar:hover {
+            background: var(--primary-hover);
         }
 
         /* Chunk Detail */
@@ -503,7 +586,7 @@
             </div>
             <div class="mode-switch">
                 <button class="mode-btn active" data-mode="paragraph" onclick="switchMode('paragraph')">段落级</button>
-                <button class="mode-btn" data-mode="sentence" onclick="switchMode('sentence')">句子级</button>
+                <!-- <button class="mode-btn" data-mode="sentence" onclick="switchMode('sentence')">句子级</button> -->
             </div>
             <div class="file-info" id="file-info">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -540,7 +623,14 @@
 
         <!-- Sidebar (Right) -->
         <div class="sidebar" id="sidebar">
-            <div class="sidebar-empty" id="sidebar-empty">
+            <!-- Text Input Section -->
+            <div class="text-input-section" id="text-input-section">
+                <div class="text-input-label">输入或粘贴文本</div>
+                <textarea class="text-input-area" id="text-input-area" placeholder="在此输入或粘贴要检测的文本..."></textarea>
+                <button class="btn-detect-sidebar" onclick="runDetectionFromInput()">开始检测</button>
+            </div>
+
+            <div class="sidebar-empty" id="sidebar-empty" style="display: none;">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
                 </svg>
@@ -673,6 +763,56 @@
             updateOverallStats();
         }
 
+        // Run detection from text input area
+        async function runDetectionFromInput() {
+            const textInput = document.getElementById('text-input-area');
+            const text = textInput.value.trim();
+
+            if (!text) {
+                alert('请输入要检测的文本');
+                return;
+            }
+
+            originalText = text;
+            currentMode = 'paragraph'; // Use paragraph mode only
+
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.classList.add('show');
+
+            try {
+                const response = await fetch('/api/detect-full', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        mode: 'paragraph'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    chunksData = data.chunks;
+                    selectedChunkIndex = -1;
+
+                    renderChunks();
+                    updateOverallStats();
+
+                    // Hide input section, show sidebar for chunk selection
+                    document.getElementById('text-input-section').style.display = 'none';
+                    document.getElementById('sidebar-empty').style.display = 'flex';
+                } else {
+                    alert('检测失败: ' + data.error);
+                }
+            } catch (error) {
+                alert('网络错误: ' + error.message);
+            } finally {
+                loadingOverlay.classList.remove('show');
+            }
+        }
+
         // Run detection on current text
         async function runDetection() {
             if (!originalText) return;
@@ -697,6 +837,11 @@
                 if (data.success) {
                     chunksData = data.chunks;
                     selectedChunkIndex = -1;
+
+                    // Hide text input section, show sidebar
+                    document.getElementById('text-input-section').style.display = 'none';
+                    document.getElementById('sidebar-empty').style.display = 'flex';
+
                     renderChunks();
                     updateOverallStats();
                 } else {
@@ -726,25 +871,25 @@
                 return;
             }
 
-            const typeLabel = currentMode === 'paragraph' ? '段落' : '句子';
+            // Render continuous text like a normal reader
+            let html = '<div class="reader-content">';
 
-            let html = '';
             chunksData.forEach((chunk, index) => {
                 const riskLevel = getRiskLevel(chunk.probability * 100);
                 const isSelected = index === selectedChunkIndex;
+                const probPercent = (chunk.probability * 100).toFixed(1);
 
                 html += `
-                    <div class="chunk-card ${riskLevel} ${isSelected ? 'selected' : ''}"
-                         onclick="selectChunk(${index})">
-                        <div class="chunk-card-header">
-                            <span class="chunk-index">${typeLabel} ${index + 1}</span>
-                            <span class="chunk-prob ${riskLevel}">${(chunk.probability * 100).toFixed(1)}%</span>
-                        </div>
-                        <div class="chunk-text-preview">${escapeHtml(chunk.text)}</div>
+                    <div class="paragraph ${riskLevel} ${isSelected ? 'selected' : ''}"
+                         onclick="selectChunk(${index})"
+                         data-index="${index}">
+                        ${escapeHtml(chunk.text)}
+                        <span class="prob-badge">${probPercent}%</span>
                     </div>
                 `;
             });
 
+            html += '</div>';
             readerPanel.innerHTML = html;
         }
 
