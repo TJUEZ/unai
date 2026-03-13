@@ -5,24 +5,158 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AIGC检测 - 阅读器模式</title>
     <style>
-        :root {
-            --bg: #ffffff;
-            --bg-secondary: #f7f7f5;
-            --text: #1a1a1a;
-            --text-secondary: #6e6e6e;
-            --primary: #d97706;
-            --primary-hover: #b45309;
-            --primary-text: #ffffff;
-            --border: #e5e5e5;
-            --muted: #737373;
-            --risk-high: #fee2e2;
-            --risk-high-text: #dc2626;
-            --risk-medium: #fef3c7;
-            --risk-medium-text: #d97706;
-            --risk-low: #dcfce7;
-            --risk-low-text: #16a34a;
+        /* ==================== 字体定义 ==================== */
+        @font-face {
+            font-family: 'CustomSerif';
+            src: local('Noto Serif SC'), local('Source Han Serif SC'), local('Songti SC'), local('STSong'), local('SimSun');
+            font-display: swap;
         }
 
+        @font-face {
+            font-family: 'CustomSans';
+            src: local('Noto Sans SC'), local('Source Han Sans SC'), local('PingFang SC'), local('Microsoft YaHei');
+            font-display: swap;
+        }
+
+        /* ==================== 主题系统 ==================== */
+        :root {
+            /* 默认字体 */
+            --font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+            --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+
+            /* 默认浅色主题 */
+            --theme-bg: #ece7dc;
+            --theme-bg-secondary: #f4f1ea;
+            --theme-panel: rgba(255, 255, 255, 0.35);
+            --theme-panel-solid: #f4f1ea;
+            --theme-text: #2f3137;
+            --theme-text-soft: #6b6f76;
+            --theme-line: rgba(47, 49, 55, 0.10);
+            --theme-line-strong: rgba(47, 49, 55, 0.16);
+            --theme-accent: #5b7cff;
+            --theme-accent-hover: #4a6ae6;
+            --theme-primary: #5b7cff;
+            --theme-primary-hover: #4a6ae6;
+            --theme-primary-text: #ffffff;
+            --theme-border: rgba(47, 49, 55, 0.10);
+            --theme-muted: #6b6f76;
+            --theme-risk-high: rgba(239, 68, 68, 0.15);
+            --theme-risk-high-text: #dc2626;
+            --theme-risk-medium: rgba(245, 158, 11, 0.15);
+            --theme-risk-medium-text: #d97706;
+            --theme-risk-low: rgba(34, 197, 94, 0.15);
+            --theme-risk-low-text: #16a34a;
+            --theme-success-bg: rgba(34, 197, 94, 0.15);
+            --theme-success-text: #16a34a;
+            --theme-shadow-float: 0 8px 24px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 深色主题 */
+        [data-theme="dark"] {
+            --theme-bg: #1a1a1e;
+            --theme-bg-secondary: #242428;
+            --theme-panel: rgba(40, 40, 45, 0.6);
+            --theme-panel-solid: #242428;
+            --theme-text: #e8e8e8;
+            --theme-text-soft: #8a8a8f;
+            --theme-line: rgba(255, 255, 255, 0.08);
+            --theme-line-strong: rgba(255, 255, 255, 0.14);
+            --theme-accent: #7c8fff;
+            --theme-accent-hover: #9aa3ff;
+            --theme-primary: #7c8fff;
+            --theme-primary-hover: #9aa3ff;
+            --theme-primary-text: #1a1a1e;
+            --theme-border: rgba(255, 255, 255, 0.08);
+            --theme-muted: #8a8a8f;
+            --theme-risk-high: rgba(239, 68, 68, 0.25);
+            --theme-risk-high-text: #ff6b6b;
+            --theme-risk-medium: rgba(245, 158, 11, 0.25);
+            --theme-risk-medium-text: #fbbf24;
+            --theme-risk-low: rgba(34, 197, 94, 0.25);
+            --theme-risk-low-text: #4ade80;
+            --theme-success-bg: rgba(34, 197, 94, 0.2);
+            --theme-success-text: #4ade80;
+            --theme-shadow-float: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 护眼主题 (暖色) */
+        [data-theme="warm"] {
+            --theme-bg: #f5f0e6;
+            --theme-bg-secondary: #ebe5d8;
+            --theme-panel: rgba(255, 252, 245, 0.5);
+            --theme-panel-solid: #ebe5d8;
+            --theme-text: #4a4538;
+            --theme-text-soft: #7a7568;
+            --theme-line: rgba(74, 69, 56, 0.12);
+            --theme-line-strong: rgba(74, 69, 56, 0.2);
+            --theme-accent: #8b7355;
+            --theme-accent-hover: #6b5a45;
+            --theme-primary: #8b7355;
+            --theme-primary-hover: #6b5a45;
+            --theme-primary-text: #ffffff;
+            --theme-border: rgba(74, 69, 56, 0.12);
+            --theme-muted: #7a7568;
+            --theme-risk-high: rgba(180, 83, 9, 0.15);
+            --theme-risk-high-text: #b45309;
+            --theme-risk-medium: rgba(180, 120, 9, 0.15);
+            --theme-risk-medium-text: #d97706;
+            --theme-risk-low: rgba(22, 101, 52, 0.15);
+            --theme-risk-low-text: #15803d;
+            --theme-success-bg: rgba(22, 101, 52, 0.15);
+            --theme-success-text: #15803d;
+            --theme-shadow-float: 0 8px 24px rgba(74, 69, 56, 0.08);
+        }
+
+        /* 复古主题 */
+        [data-theme="retro"] {
+            --theme-bg: #f0e6d3;
+            --theme-bg-secondary: #e5d9c3;
+            --theme-panel: rgba(255, 250, 240, 0.6);
+            --theme-panel-solid: #e5d9c3;
+            --theme-text: #3d3426;
+            --theme-text-soft: #6b5f4f;
+            --theme-line: rgba(61, 52, 38, 0.15);
+            --theme-line-strong: rgba(61, 52, 38, 0.25);
+            --theme-accent: #8b6914;
+            --theme-accent-hover: #6b5110;
+            --theme-primary: #8b6914;
+            --theme-primary-hover: #6b5110;
+            --theme-primary-text: #f5f0e6;
+            --theme-border: rgba(61, 52, 38, 0.15);
+            --theme-muted: #6b5f4f;
+            --theme-risk-high: rgba(150, 50, 20, 0.2);
+            --theme-risk-high-text: #963214;
+            --theme-risk-medium: rgba(150, 100, 20, 0.2);
+            --theme-risk-medium-text: #966414;
+            --theme-risk-low: rgba(50, 100, 30, 0.2);
+            --theme-risk-low-text: #32641e;
+            --theme-success-bg: rgba(50, 100, 30, 0.15);
+            --theme-success-text: #32641e;
+            --theme-shadow-float: 0 8px 24px rgba(61, 52, 38, 0.1);
+        }
+
+        /* 字体变体 */
+        [data-font="songti"] {
+            --font-serif: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", serif;
+        }
+
+        [data-font="heiti"] {
+            --font-serif: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+
+        [data-font="kaiti"] {
+            --font-serif: "Kaiti SC", "STKaiti", "KaiTi", "楷体", serif;
+        }
+
+        [data-font="yuanti"] {
+            --font-serif: "Yuanti SC", "YouYuan", "幼圆", "Noto Sans SC", sans-serif;
+        }
+
+        [data-font="weiruan"] {
+            --font-serif: "Microsoft YaHei", "微软雅黑", "Noto Sans SC", sans-serif;
+        }
+
+        /* ==================== 通用样式 ==================== */
         * {
             margin: 0;
             padding: 0;
@@ -30,17 +164,18 @@
         }
 
         body {
-            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            font-family: var(--font-serif);
+            background: var(--theme-bg);
+            color: var(--theme-text);
             min-height: 100vh;
             line-height: 1.6;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         /* Header */
         .header {
-            background: var(--bg);
-            border-bottom: 1px solid var(--border);
+            background: var(--theme-panel);
+            border-bottom: 1px solid var(--theme-line);
             padding: 12px 24px;
             display: flex;
             align-items: center;
@@ -51,12 +186,14 @@
             right: 0;
             z-index: 100;
             height: 56px;
+            backdrop-filter: blur(12px);
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
         .header-left {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 20px;
         }
 
         .logo {
@@ -68,28 +205,117 @@
         .logo-icon {
             width: 32px;
             height: 32px;
-            background: var(--primary);
-            border-radius: 6px;
+            background: var(--theme-primary);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--primary-text);
+            color: var(--theme-primary-text);
             font-weight: bold;
-            font-size: 14px;
+            font-size: 12px;
         }
 
         .logo-text {
+            font-family: var(--font-serif);
             font-size: 18px;
             font-weight: 600;
-            color: var(--text);
+            color: var(--theme-text);
         }
 
-        .mode-switch {
+        /* 设置区域 */
+        .settings-area {
             display: flex;
-            gap: 4px;
-            background: var(--bg-secondary);
-            padding: 4px;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .settings-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 10px;
+        }
+
+        .settings-label {
+            font-size: 12px;
+            color: var(--theme-text-soft);
+        }
+
+        .theme-selector {
+            display: flex;
+            gap: 2px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px;
             border-radius: 8px;
+        }
+
+        .theme-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .theme-btn.active {
+            box-shadow: 0 0 0 2px var(--theme-accent);
+        }
+
+        .theme-btn[data-theme-btn="light"] {
+            background: linear-gradient(135deg, #ece7dc 50%, #f4f1ea 50%);
+        }
+
+        .theme-btn[data-theme-btn="dark"] {
+            background: linear-gradient(135deg, #1a1a1e 50%, #242428 50%);
+        }
+
+        .theme-btn[data-theme-btn="warm"] {
+            background: linear-gradient(135deg, #f5f0e6 50%, #ebe5d8 50%);
+        }
+
+        .theme-btn[data-theme-btn="retro"] {
+            background: linear-gradient(135deg, #f0e6d3 50%, #e5d9c3 50%);
+        }
+
+        .theme-btn::after {
+            content: attr(data-name);
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            white-space: nowrap;
+            color: var(--theme-text-soft);
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+
+        .theme-btn:hover::after {
+            opacity: 1;
+        }
+
+        .font-selector {
+            padding: 4px 8px;
+            border: 1px solid var(--theme-line-strong);
+            border-radius: 8px;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.3);
+            color: var(--theme-text);
+            cursor: pointer;
+        }
+
+        .font-selector:focus {
+            outline: none;
+            border-color: var(--theme-primary);
         }
 
         /* Chunk Size Selector */
@@ -97,35 +323,38 @@
             display: flex;
             align-items: center;
             gap: 4px;
-            background: var(--bg-secondary);
+            background: rgba(255, 255, 255, 0.25);
             padding: 4px;
-            border-radius: 8px;
+            border-radius: 10px;
         }
 
         .chunk-size-label {
             font-size: 13px;
-            color: var(--text-secondary);
-            padding: 0 8px;
+            color: var(--theme-text-soft);
+            padding: 0 10px;
         }
 
         .chunk-size-btn {
-            padding: 6px 12px;
+            padding: 6px 14px;
             background: transparent;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 13px;
-            color: var(--text-secondary);
+            color: var(--theme-text-soft);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s ease;
         }
 
         .chunk-size-btn:hover {
-            background: var(--border);
+            background: rgba(255, 255, 255, 0.35);
+            color: var(--theme-text);
         }
 
         .chunk-size-btn.active {
-            background: var(--primary);
-            color: white;
+            background: rgba(255, 255, 255, 0.55);
+            color: var(--theme-text);
+            font-weight: 500;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
         /* Model Selector */
@@ -137,44 +366,22 @@
 
         .model-label {
             font-size: 13px;
-            color: var(--text-secondary);
+            color: var(--theme-text-soft);
         }
 
         .model-select {
             padding: 6px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
+            border: 1px solid var(--theme-line-strong);
+            border-radius: 10px;
             font-size: 13px;
-            background: var(--bg);
-            color: var(--text);
+            background: rgba(255, 255, 255, 0.35);
+            color: var(--theme-text);
             cursor: pointer;
         }
 
         .model-select:focus {
             outline: none;
-            border-color: var(--primary);
-        }
-
-        .mode-btn {
-            padding: 6px 16px;
-            background: transparent;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .mode-btn:hover {
-            color: var(--text);
-        }
-
-        .mode-btn.active {
-            background: var(--bg);
-            color: var(--primary);
-            font-weight: 500;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-color: var(--theme-primary);
         }
 
         .btn-import {
@@ -182,17 +389,18 @@
             align-items: center;
             gap: 8px;
             padding: 8px 16px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.35);
+            border: 1px solid var(--theme-line);
+            border-radius: 999px;
             font-size: 14px;
-            color: var(--text);
+            color: var(--theme-text);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s ease;
         }
 
         .btn-import:hover {
-            background: var(--border);
+            background: rgba(255, 255, 255, 0.55);
+            border-color: var(--theme-line-strong);
         }
 
         .btn-import svg {
@@ -212,7 +420,7 @@
             flex: 1;
             padding: 24px;
             overflow-y: auto;
-            background: var(--bg);
+            background: var(--theme-bg);
         }
 
         .reader-empty {
@@ -221,7 +429,7 @@
             align-items: center;
             justify-content: center;
             height: 100%;
-            color: var(--muted);
+            color: var(--theme-muted);
         }
 
         .reader-empty svg {
@@ -235,11 +443,11 @@
             font-size: 16px;
         }
 
-        /* Reader content - continuous text display */
+        /* Reader content */
         .reader-content {
             font-size: 16px;
             line-height: 1.8;
-            color: var(--text);
+            color: var(--theme-text);
             max-width: 800px;
             margin: 0 auto;
         }
@@ -247,209 +455,119 @@
         .reader-content .paragraph {
             padding: 12px 16px;
             margin-bottom: 8px;
-            border-radius: 6px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.15s ease;
             border-left: 3px solid transparent;
         }
 
         .reader-content .paragraph:hover {
-            background: #f3f4f6 !important;
+            background: rgba(255, 255, 255, 0.25) !important;
         }
 
         .reader-content .paragraph.selected {
-            border-left-color: var(--primary);
-            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            border-left-color: var(--theme-primary);
+            box-shadow: var(--theme-shadow-float);
         }
 
         .reader-content .paragraph.high {
-            background: rgba(254, 226, 226, 0.5);
-            border-left-color: #ef4444;
+            background: var(--theme-risk-high);
+            border-left-color: var(--theme-risk-high-text);
         }
 
         .reader-content .paragraph.medium {
-            background: rgba(254, 243, 199, 0.5);
-            border-left-color: #f59e0b;
+            background: var(--theme-risk-medium);
+            border-left-color: var(--theme-risk-medium-text);
         }
 
         .reader-content .paragraph.low {
-            background: rgba(220, 252, 231, 0.5);
-            border-left-color: #22c55e;
+            background: var(--theme-risk-low);
+            border-left-color: var(--theme-risk-low-text);
         }
 
         .reader-content .paragraph .prob-badge {
             display: inline-block;
             font-size: 12px;
-            padding: 2px 8px;
-            border-radius: 10px;
+            padding: 2px 10px;
+            border-radius: 999px;
             margin-left: 8px;
             vertical-align: middle;
             font-weight: 500;
         }
 
         .reader-content .paragraph.high .prob-badge {
-            background: #fee2e2;
-            color: #dc2626;
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--theme-risk-high-text);
         }
 
         .reader-content .paragraph.medium .prob-badge {
-            background: #fef3c7;
-            color: #d97706;
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--theme-risk-medium-text);
         }
 
         .reader-content .paragraph.low .prob-badge {
-            background: #dcfce7;
-            color: #16a34a;
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--theme-risk-low-text);
         }
 
-        .chunk-card-header {
+        /* Sidebar Wrapper */
+        .sidebar-wrapper {
+            position: relative;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .chunk-index {
-            font-size: 13px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .chunk-prob {
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .chunk-prob.high {
-            color: var(--risk-high-text);
-        }
-
-        .chunk-prob.medium {
-            color: var(--risk-medium-text);
-        }
-
-        .chunk-prob.low {
-            color: var(--risk-low-text);
-        }
-
-        .chunk-text-preview {
-            font-size: 14px;
-            color: var(--text);
-            line-height: 1.6;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        /* Sidebar (Right) - Resizable */
-        .sidebar {
+            flex-shrink: 0;
+            height: 100%;
             width: 380px;
-            min-width: 280px;
-            max-width: 600px;
-            background: var(--bg-secondary);
-            border-left: 1px solid var(--border);
+        }
+
+        /* Sidebar (Right) */
+        .sidebar {
+            width: 100%;
+            min-width: 0;
+            background: var(--theme-panel-solid);
+            border-left: 1px solid var(--theme-line);
             padding: 20px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            overflow: auto;
-            position: relative;
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
         /* Resize handle */
         .resize-handle {
             position: absolute;
-            left: 0;
+            right: 0;
             top: 0;
             bottom: 0;
-            width: 6px;
-            cursor: col-resize;
+            width: 8px;
+            cursor: ew-resize;
             background: transparent;
             z-index: 100;
             transition: background 0.2s;
         }
 
+        .resize-handle::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 3px;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 40px;
+            background: var(--theme-line-strong);
+            border-radius: 2px;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        .resize-handle:hover::after,
+        .resize-handle.dragging::after {
+            opacity: 1;
+            background: var(--theme-primary);
+        }
+
         .resize-handle:hover,
         .resize-handle.dragging {
-            background: var(--primary);
-        }
-
-        /* Text History */
-        .text-history {
-            margin-top: 16px;
-            border-top: 1px solid var(--border);
-            padding-top: 16px;
-        }
-
-        .text-history-title {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .text-history-title svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        .history-item {
-            padding: 10px;
-            margin-bottom: 8px;
-            border-radius: 6px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .history-item .history-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            color: var(--muted);
-            margin-bottom: 6px;
-        }
-
-        .history-item .history-prob {
-            font-weight: 500;
-        }
-
-        .history-item .history-prob.high { color: #dc2626; }
-        .history-item .history-prob.medium { color: #d97706; }
-        .history-item .history-prob.low { color: #16a34a; }
-
-        .history-item .history-text {
-            color: var(--text);
-            word-break: break-all;
-        }
-
-        .history-empty {
-            color: var(--muted);
-            font-size: 13px;
-            text-align: center;
-            padding: 12px;
-        }
-
-        .sidebar-empty {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: var(--muted);
-            text-align: center;
-        }
-
-        .sidebar-empty svg {
-            width: 48px;
-            height: 48px;
-            margin-bottom: 12px;
-            opacity: 0.5;
+            background: rgba(91, 124, 255, 0.1);
         }
 
         /* Text Input Section */
@@ -461,42 +579,47 @@
             font-size: 14px;
             font-weight: 500;
             margin-bottom: 12px;
-            color: var(--text);
+            color: var(--theme-text);
         }
 
         .text-input-area {
             width: 100%;
             height: 350px;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            padding: 14px;
+            border: 1px solid var(--theme-line-strong);
+            border-radius: 14px;
             font-size: 15px;
             font-family: inherit;
             line-height: 1.8;
             resize: vertical;
+            background: rgba(255, 255, 255, 0.45);
+            color: var(--theme-text);
+            backdrop-filter: blur(8px);
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
         .text-input-area:focus {
             outline: none;
-            border-color: var(--primary);
+            border-color: var(--theme-primary);
+            box-shadow: 0 0 0 3px rgba(91, 124, 255, 0.1);
         }
 
         .btn-detect-sidebar {
             width: 100%;
-            padding: 12px;
-            margin-top: 12px;
-            background: var(--primary);
-            color: white;
+            padding: 14px;
+            margin-top: 14px;
+            background: var(--theme-primary);
+            color: var(--theme-primary-text);
             border: none;
-            border-radius: 8px;
+            border-radius: 999px;
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.15s ease;
         }
 
         .btn-detect-sidebar:hover {
-            background: var(--primary-hover);
+            background: var(--theme-primary-hover);
         }
 
         /* Chunk Detail */
@@ -515,7 +638,7 @@
         .chunk-detail-title {
             font-size: 14px;
             font-weight: 600;
-            color: var(--text);
+            color: var(--theme-text);
             margin-bottom: 8px;
         }
 
@@ -530,47 +653,42 @@
             font-weight: 700;
         }
 
-        .prob-value.high {
-            color: var(--risk-high-text);
-        }
-
-        .prob-value.medium {
-            color: var(--risk-medium-text);
-        }
-
-        .prob-value.low {
-            color: var(--risk-low-text);
-        }
+        .prob-value.high { color: var(--theme-risk-high-text); }
+        .prob-value.medium { color: var(--theme-risk-medium-text); }
+        .prob-value.low { color: var(--theme-risk-low-text); }
 
         .prob-label {
             font-size: 14px;
-            color: var(--text-secondary);
+            color: var(--theme-text-soft);
         }
 
         .chunk-editor-label {
             font-size: 14px;
             font-weight: 500;
-            color: var(--text);
+            color: var(--theme-text);
             margin-bottom: 8px;
         }
 
         .chunk-editor {
             width: 100%;
             min-height: 350px;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            padding: 14px;
+            border: 1px solid var(--theme-line-strong);
+            border-radius: 14px;
             font-size: 15px;
             font-family: inherit;
             resize: vertical;
-            background: var(--bg);
-            color: var(--text);
+            background: rgba(255, 255, 255, 0.45);
+            color: var(--theme-text);
             line-height: 1.8;
+            backdrop-filter: blur(8px);
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
         .chunk-editor:focus {
             outline: none;
-            border-color: var(--primary);
+            border-color: var(--theme-primary);
+            box-shadow: 0 0 0 3px rgba(91, 124, 255, 0.1);
         }
 
         .detecting-indicator {
@@ -579,7 +697,7 @@
             gap: 8px;
             margin-top: 8px;
             font-size: 13px;
-            color: var(--primary);
+            color: var(--theme-primary);
         }
 
         .detecting-indicator.show {
@@ -589,8 +707,8 @@
         .detecting-spinner {
             width: 14px;
             height: 14px;
-            border: 2px solid var(--border);
-            border-top-color: var(--primary);
+            border: 2px solid var(--theme-line);
+            border-top-color: var(--theme-primary);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
@@ -606,13 +724,15 @@
             left: 0;
             right: 0;
             height: 60px;
-            background: var(--bg);
-            border-top: 1px solid var(--border);
+            background: var(--theme-panel-solid);
+            border-top: 1px solid var(--theme-line);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 32px;
+            gap: 40px;
             padding: 0 24px;
+            backdrop-filter: blur(12px);
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
         .stat-item {
@@ -623,28 +743,20 @@
 
         .stat-label {
             font-size: 14px;
-            color: var(--text-secondary);
+            color: var(--theme-text-soft);
         }
 
         .stat-value {
             font-size: 18px;
             font-weight: 600;
-            color: var(--text);
+            color: var(--theme-text);
         }
 
-        .stat-value.high {
-            color: var(--risk-high-text);
-        }
+        .stat-value.high { color: var(--theme-risk-high-text); }
+        .stat-value.medium { color: var(--theme-risk-medium-text); }
+        .stat-value.low { color: var(--theme-risk-low-text); }
 
-        .stat-value.medium {
-            color: var(--risk-medium-text);
-        }
-
-        .stat-value.low {
-            color: var(--risk-low-text);
-        }
-
-        /* Loading */
+        /* Loading Overlay */
         .loading-overlay {
             display: none;
             position: fixed;
@@ -652,11 +764,20 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(255,255,255,0.9);
+            background: rgba(236, 231, 220, 0.9);
             z-index: 200;
             align-items: center;
             justify-content: center;
             flex-direction: column;
+            backdrop-filter: blur(8px);
+        }
+
+        [data-theme="dark"] .loading-overlay {
+            background: rgba(26, 26, 30, 0.9);
+        }
+
+        [data-theme="warm"] .loading-overlay {
+            background: rgba(245, 240, 230, 0.9);
         }
 
         .loading-overlay.show {
@@ -666,15 +787,15 @@
         .spinner {
             width: 40px;
             height: 40px;
-            border: 3px solid var(--border);
-            border-top-color: var(--primary);
+            border: 3px solid var(--theme-line);
+            border-top-color: var(--theme-primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 16px;
         }
 
         .loading-text {
-            color: var(--text-secondary);
+            color: var(--theme-text-soft);
             font-size: 14px;
         }
 
@@ -689,11 +810,11 @@
             align-items: center;
             gap: 8px;
             padding: 6px 12px;
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-radius: 6px;
+            background: var(--theme-success-bg);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 10px;
             font-size: 13px;
-            color: #166534;
+            color: var(--theme-success-text);
         }
 
         .file-info.show {
@@ -710,18 +831,184 @@
             background: none;
             border: none;
             cursor: pointer;
-            color: #166534;
+            color: var(--theme-success-text);
             padding: 2px;
             display: flex;
             align-items: center;
         }
 
         .file-remove:hover {
-            color: var(--risk-high-text);
+            color: var(--theme-risk-high-text);
+        }
+
+        /* Text History */
+        .text-history {
+            margin-top: 16px;
+            border-top: 1px solid var(--theme-line);
+            padding-top: 16px;
+        }
+
+        .text-history-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--theme-text-soft);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .text-history-title svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .history-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid var(--theme-line);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .history-item .history-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--theme-muted);
+            margin-bottom: 6px;
+        }
+
+        .history-item .history-prob { font-weight: 500; }
+        .history-item .history-prob.high { color: var(--theme-risk-high-text); }
+        .history-item .history-prob.medium { color: var(--theme-risk-medium-text); }
+        .history-item .history-prob.low { color: var(--theme-risk-low-text); }
+
+        .history-item .history-text {
+            color: var(--theme-text);
+            word-break: break-all;
+        }
+
+        .history-empty {
+            color: var(--theme-muted);
+            font-size: 13px;
+            text-align: center;
+            padding: 12px;
+        }
+
+        .sidebar-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--theme-muted);
+            text-align: center;
+        }
+
+        .sidebar-empty svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        /* 自动保存提示 */
+        .autosave-indicator {
+            position: fixed;
+            bottom: 70px;
+            right: 20px;
+            padding: 8px 14px;
+            background: var(--theme-panel-solid);
+            border: 1px solid var(--theme-line);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--theme-text-soft);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 50;
+        }
+
+        .autosave-indicator.show {
+            opacity: 1;
+        }
+
+        .autosave-indicator svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .autosave-indicator.saved {
+            color: var(--theme-success-text);
+        }
+
+        /* 恢复提示 */
+        .restore-banner {
+            position: fixed;
+            top: 66px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: var(--theme-panel-solid);
+            border: 1px solid var(--theme-accent);
+            border-radius: 12px;
+            font-size: 13px;
+            color: var(--theme-text);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            backdrop-filter: blur(12px);
+            z-index: 90;
+            box-shadow: var(--theme-shadow-float);
+        }
+
+        .restore-banner.show {
+            display: flex;
+        }
+
+        .restore-banner button {
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.15s ease;
+        }
+
+        .restore-btn-primary {
+            background: var(--theme-primary);
+            color: var(--theme-primary-text);
+        }
+
+        .restore-btn-primary:hover {
+            background: var(--theme-primary-hover);
+        }
+
+        .restore-btn-secondary {
+            background: rgba(255, 255, 255, 0.3);
+            color: var(--theme-text);
+            border: 1px solid var(--theme-line) !important;
+        }
+
+        .restore-btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.5);
         }
     </style>
 </head>
-<body>
+<body data-theme="light" data-font="noto">
+    <!-- 恢复提示 -->
+    <div class="restore-banner" id="restore-banner">
+        <span>发现上次未保存的内容，是否恢复？</span>
+        <button class="restore-btn-primary" onclick="restoreContent()">恢复</button>
+        <button class="restore-btn-secondary" onclick="dismissRestore()">放弃</button>
+    </div>
+
     <!-- Header -->
     <header class="header">
         <div class="header-left">
@@ -730,17 +1017,17 @@
                 <span class="logo-text">AIGC检测</span>
             </div>
             <div class="chunk-size-selector">
-                <span class="chunk-size-label">分块方式:</span>
-                <button class="chunk-size-btn active" data-size="original" onclick="setChunkSize('original')">原文段落</button>
+                <span class="chunk-size-label">分块:</span>
+                <button class="chunk-size-btn active" data-size="original" onclick="setChunkSize('original')">原文</button>
                 <button class="chunk-size-btn" data-size="200" onclick="setChunkSize(200)">200字</button>
                 <button class="chunk-size-btn" data-size="500" onclick="setChunkSize(500)">500字</button>
                 <button class="chunk-size-btn" data-size="1000" onclick="setChunkSize(1000)">1000字</button>
             </div>
             <div class="model-selector">
-                <span class="model-label">检测模型:</span>
+                <span class="model-label">模型:</span>
                 <select id="model-select" class="model-select" onchange="setModel(this.value)">
-                    <option value="zhv3">中文v3 (默认)</option>
-                    <option value="zhv3short">中文v3短文本版</option>
+                    <option value="zhv3">中文v3</option>
+                    <option value="zhv3short">短文本版</option>
                     <option value="ensemble" disabled>集成模型 (敬请期待)</option>
                 </select>
             </div>
@@ -756,12 +1043,39 @@
                 </button>
             </div>
         </div>
-        <button class="btn-import" onclick="document.getElementById('file-input').click()">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            导入文件
-        </button>
+
+        <div class="settings-area">
+            <!-- 字体选择 -->
+            <div class="settings-group">
+                <span class="settings-label">字体</span>
+                <select class="font-selector" id="font-selector" onchange="setFont(this.value)">
+                    <option value="noto">思源宋体</option>
+                    <option value="songti">宋体</option>
+                    <option value="heiti">思源黑体</option>
+                    <option value="kaiti">楷体</option>
+                    <option value="yuanti">幼圆</option>
+                    <option value="weiruan">微软雅黑</option>
+                </select>
+            </div>
+
+            <!-- 主题选择 -->
+            <div class="settings-group">
+                <span class="settings-label">主题</span>
+                <div class="theme-selector">
+                    <button class="theme-btn active" data-theme-btn="light" data-name="浅色" onclick="setTheme('light')"></button>
+                    <button class="theme-btn" data-theme-btn="dark" data-name="深色" onclick="setTheme('dark')"></button>
+                    <button class="theme-btn" data-theme-btn="warm" data-name="护眼" onclick="setTheme('warm')"></button>
+                    <button class="theme-btn" data-theme-btn="retro" data-name="复古" onclick="setTheme('retro')"></button>
+                </div>
+            </div>
+
+            <button class="btn-import" onclick="document.getElementById('file-input').click()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                导入
+            </button>
+        </div>
         <input type="file" id="file-input" accept=".txt,.docx,.pdf" onchange="loadFile(event)">
     </header>
 
@@ -777,36 +1091,37 @@
             </div>
         </div>
 
-        <!-- Sidebar (Right) -->
-        <div class="sidebar" id="sidebar">
+        <!-- Sidebar Wrapper with Resize Handle -->
+        <div class="sidebar-wrapper" id="sidebar-wrapper">
             <div class="resize-handle" id="resize-handle"></div>
-
-            <!-- Text Input Section -->
-            <div class="text-input-section" id="text-input-section">
-                <div class="text-input-label">输入或粘贴文本</div>
-                <textarea class="text-input-area" id="text-input-area" placeholder="在此输入或粘贴要检测的文本..."></textarea>
-                <button class="btn-detect-sidebar" onclick="runDetectionFromInput()">开始检测</button>
-            </div>
-
-            <div class="sidebar-empty" id="sidebar-empty" style="display: none;">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
-                </svg>
-                <p>点击左侧文本块查看详情</p>
-            </div>
-            <div class="chunk-detail" id="chunk-detail">
-                <div class="chunk-detail-header">
-                    <div class="chunk-detail-title" id="chunk-detail-title">段落 1</div>
-                    <div class="chunk-detail-prob">
-                        <span class="prob-value" id="chunk-detail-prob">0%</span>
-                        <span class="prob-label">AI生成概率</span>
-                    </div>
+            <div class="sidebar" id="sidebar">
+                <!-- Text Input Section -->
+                <div class="text-input-section" id="text-input-section">
+                    <div class="text-input-label">输入或粘贴文本</div>
+                    <textarea class="text-input-area" id="text-input-area" placeholder="在此输入或粘贴要检测的文本..."></textarea>
+                    <button class="btn-detect-sidebar" onclick="runDetectionFromInput()">开始检测</button>
                 </div>
-                <div class="chunk-editor-label">编辑文本（自动重新检测）</div>
-                <textarea class="chunk-editor" id="chunk-editor" oninput="onEditorInput()"></textarea>
-                <div class="detecting-indicator" id="detecting-indicator">
-                    <div class="detecting-spinner"></div>
-                    <span>检测中...</span>
+
+                <div class="sidebar-empty" id="sidebar-empty" style="display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
+                    </svg>
+                    <p>点击左侧文本块查看详情</p>
+                </div>
+                <div class="chunk-detail" id="chunk-detail">
+                    <div class="chunk-detail-header">
+                        <div class="chunk-detail-title" id="chunk-detail-title">段落 1</div>
+                        <div class="chunk-detail-prob">
+                            <span class="prob-value" id="chunk-detail-prob">0%</span>
+                            <span class="prob-label">AI生成概率</span>
+                        </div>
+                    </div>
+                    <div class="chunk-editor-label">编辑文本（自动重新检测）</div>
+                    <textarea class="chunk-editor" id="chunk-editor" oninput="onEditorInput()"></textarea>
+                    <div class="detecting-indicator" id="detecting-indicator">
+                        <div class="detecting-spinner"></div>
+                        <span>检测中...</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -825,6 +1140,14 @@
         </div>
     </div>
 
+    <!-- 自动保存提示 -->
+    <div class="autosave-indicator" id="autosave-indicator">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>已自动保存</span>
+    </div>
+
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loading-overlay">
         <div class="spinner"></div>
@@ -832,20 +1155,130 @@
     </div>
 
     <script>
-        // Global state
+        // ==================== 全局状态 ====================
         let currentMode = 'paragraph';
-        let chunkSize = 200; // Default chunk size
+        let chunkSize = 200;
         let chunksData = [];
         let selectedChunkIndex = -1;
         let originalText = '';
         let debounceTimer = null;
-        let textHistory = []; // Store text revision history
+        let textHistory = [];
+        let autoSaveTimer = null;
 
-        // Set chunk size
-        function setChunkSize(size) {
+        // ==================== 主题和字体管理 ====================
+        function loadSettings() {
+            // 加载主题
+            const savedTheme = localStorage.getItem('aigc_theme') || 'light';
+            setTheme(savedTheme, false);
+
+            // 加载字体
+            const savedFont = localStorage.getItem('aigc_font') || 'noto';
+            document.getElementById('font-selector').value = savedFont;
+            document.body.setAttribute('data-font', savedFont);
+
+            // 加载分块大小
+            const savedChunkSize = localStorage.getItem('aigc_chunkSize');
+            if (savedChunkSize) {
+                setChunkSize(savedChunkSize === 'original' ? 'original' : parseInt(savedChunkSize), false);
+            }
+        }
+
+        function setTheme(theme, save = true) {
+            document.body.setAttribute('data-theme', theme);
+
+            // 更新按钮状态
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.themeBtn === theme);
+            });
+
+            if (save) {
+                localStorage.setItem('aigc_theme', theme);
+            }
+        }
+
+        function setFont(font, save = true) {
+            document.body.setAttribute('data-font', font);
+
+            if (save) {
+                localStorage.setItem('aigc_font', font);
+            }
+        }
+
+        // ==================== 自动保存和恢复 ====================
+        function initAutoSave() {
+            // 检查是否有保存的内容
+            const savedContent = localStorage.getItem('aigc_draft_content');
+            const savedFileName = localStorage.getItem('aigc_draft_filename');
+
+            if (savedContent && savedContent.length > 0) {
+                document.getElementById('restore-banner').classList.add('show');
+                document.getElementById('restore-banner').dataset.content = savedContent;
+                document.getElementById('restore-banner').dataset.filename = savedFileName || '';
+            }
+        }
+
+        function restoreContent() {
+            const banner = document.getElementById('restore-banner');
+            const content = banner.dataset.content;
+            const filename = banner.dataset.filename;
+
+            if (content) {
+                originalText = content;
+                document.getElementById('text-input-area').value = content;
+
+                if (filename) {
+                    document.getElementById('file-name').textContent = filename;
+                    document.getElementById('file-info').classList.add('show');
+                }
+
+                // 自动运行检测
+                runDetectionFromInput();
+            }
+
+            dismissRestore();
+        }
+
+        function dismissRestore() {
+            document.getElementById('restore-banner').classList.remove('show');
+            localStorage.removeItem('aigc_draft_content');
+            localStorage.removeItem('aigc_draft_filename');
+        }
+
+        function autoSave() {
+            const content = document.getElementById('text-input-area').value;
+            const fileName = document.getElementById('file-name').textContent;
+
+            if (content && content.length > 0) {
+                localStorage.setItem('aigc_draft_content', content);
+                if (fileName) {
+                    localStorage.setItem('aigc_draft_filename', fileName);
+                }
+
+                // 显示保存提示
+                const indicator = document.getElementById('autosave-indicator');
+                indicator.classList.add('show', 'saved');
+                setTimeout(() => {
+                    indicator.classList.remove('show');
+                }, 2000);
+            }
+        }
+
+        // 设置自动保存
+        function setupAutoSave() {
+            const textArea = document.getElementById('text-input-area');
+
+            textArea.addEventListener('input', () => {
+                if (autoSaveTimer) {
+                    clearTimeout(autoSaveTimer);
+                }
+                autoSaveTimer = setTimeout(autoSave, 3000); // 3秒后自动保存
+            });
+        }
+
+        // ==================== 其他功能 ====================
+        function setChunkSize(size, save = true) {
             chunkSize = size;
 
-            // Update UI
             document.querySelectorAll('.chunk-size-btn').forEach(btn => {
                 if (size === 'original') {
                     btn.classList.toggle('active', btn.dataset.size === 'original');
@@ -854,37 +1287,30 @@
                 }
             });
 
-            // Re-run detection if we have text
+            if (save) {
+                localStorage.setItem('aigc_chunkSize', size);
+            }
+
             if (originalText) {
                 runDetection();
             }
         }
 
-        // Set detection model
         function setModel(modelName) {
             alert('模型切换功能需要下载相应模型文件，当前使用默认模型');
-            // Reset to default
             document.getElementById('model-select').value = 'zhv3';
         }
 
-        // Switch between paragraph and sentence mode
         function switchMode(mode) {
             if (currentMode === mode) return;
-
             currentMode = mode;
 
-            // Update UI
-            document.querySelectorAll('.mode-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.mode === mode);
-            });
-
-            // Re-run detection if we have text
             if (originalText) {
                 runDetection();
             }
         }
 
-        // Handle file upload
+        // ==================== 文件处理 ====================
         async function loadFile(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -907,6 +1333,11 @@
                     originalText = data.text;
                     document.getElementById('file-name').textContent = data.filename;
                     document.getElementById('file-info').classList.add('show');
+
+                    // 保存到自动保存
+                    localStorage.setItem('aigc_draft_content', data.text);
+                    localStorage.setItem('aigc_draft_filename', data.filename);
+
                     await runDetection();
                 } else {
                     alert(data.error || '文件上传失败');
@@ -920,7 +1351,6 @@
             }
         }
 
-        // Remove uploaded file
         function removeFile() {
             originalText = '';
             chunksData = [];
@@ -937,10 +1367,10 @@
                 </div>
             `;
 
-            // Preserve resize handle when resetting sidebar
             const sidebar = document.getElementById('sidebar');
-            const currentWidth = sidebar.style.width || getComputedStyle(sidebar).width;
-            sidebar.innerHTML = '<div class="resize-handle" id="resize-handle"></div>' + `
+            const sidebarWrapper = document.getElementById('sidebar-wrapper');
+            const currentWidth = sidebarWrapper ? (sidebarWrapper.style.width || getComputedStyle(sidebarWrapper).width) : '';
+            sidebar.innerHTML = `
                 <div class="sidebar-empty" id="sidebar-empty">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
@@ -948,13 +1378,19 @@
                     <p>点击左侧文本块查看详情</p>
                 </div>
             `;
-            sidebar.style.width = currentWidth;
+            if (currentWidth && sidebarWrapper) {
+                sidebarWrapper.style.width = currentWidth;
+            }
             attachResizeHandler();
 
             updateOverallStats();
+
+            // 清除自动保存
+            localStorage.removeItem('aigc_draft_content');
+            localStorage.removeItem('aigc_draft_filename');
         }
 
-        // Run detection from text input area
+        // ==================== 检测功能 ====================
         async function runDetectionFromInput() {
             const textInput = document.getElementById('text-input-area');
             const text = textInput.value.trim();
@@ -965,7 +1401,10 @@
             }
 
             originalText = text;
-            currentMode = 'paragraph'; // Use paragraph mode only
+            currentMode = 'paragraph';
+
+            // 自动保存
+            autoSave();
 
             const loadingOverlay = document.getElementById('loading-overlay');
             loadingOverlay.classList.add('show');
@@ -973,9 +1412,7 @@
             try {
                 const response = await fetch('/api/detect-full', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         text: text,
                         mode: 'paragraph'
@@ -991,7 +1428,6 @@
                     renderChunks();
                     updateOverallStats();
 
-                    // Hide input section, show sidebar for chunk selection
                     document.getElementById('text-input-section').style.display = 'none';
                     document.getElementById('sidebar-empty').style.display = 'flex';
                 } else {
@@ -1004,7 +1440,6 @@
             }
         }
 
-        // Run detection on current text
         async function runDetection() {
             if (!originalText) return;
 
@@ -1014,9 +1449,7 @@
             try {
                 const response = await fetch('/api/detect-full', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         text: originalText,
                         mode: currentMode,
@@ -1030,7 +1463,6 @@
                     chunksData = data.chunks;
                     selectedChunkIndex = -1;
 
-                    // Hide text input section, show sidebar
                     document.getElementById('text-input-section').style.display = 'none';
                     document.getElementById('sidebar-empty').style.display = 'flex';
 
@@ -1047,7 +1479,7 @@
             }
         }
 
-        // Render chunks in left panel
+        // ==================== 渲染功能 ====================
         function renderChunks() {
             const readerPanel = document.getElementById('reader-panel');
 
@@ -1063,7 +1495,6 @@
                 return;
             }
 
-            // Render continuous text like a normal reader
             let html = '<div class="reader-content">';
 
             chunksData.forEach((chunk, index) => {
@@ -1085,63 +1516,61 @@
             readerPanel.innerHTML = html;
         }
 
-        // Handle chunk selection
         function selectChunk(index) {
             selectedChunkIndex = index;
             renderChunks();
             renderEditor();
         }
 
-        // Resize handler - separate function for reuse
         function attachResizeHandler() {
             const resizeHandle = document.getElementById('resize-handle');
-            const sidebar = document.getElementById('sidebar');
-            if (!resizeHandle || !sidebar) return;
+            const sidebarWrapper = document.getElementById('sidebar-wrapper');
+            if (!resizeHandle || !sidebarWrapper) return;
 
+            const MIN_WIDTH = 280;
+            const MAX_WIDTH = 600;
             let isResizing = false;
             let startX = 0;
             let startWidth = 0;
 
             resizeHandle.addEventListener('mousedown', function(e) {
                 isResizing = true;
-                startX = e.pageX;
-                startWidth = sidebar.offsetWidth;
+                startX = e.clientX;
+                startWidth = sidebarWrapper.offsetWidth;
                 resizeHandle.classList.add('dragging');
+                document.body.style.userSelect = 'none';
                 e.preventDefault();
                 e.stopPropagation();
             });
 
             document.addEventListener('mousemove', function(e) {
                 if (!isResizing) return;
-                const delta = e.pageX - startX;
-                const newWidth = startWidth + delta;
-                sidebar.style.width = Math.max(newWidth, 280) + 'px';
+                const delta = e.clientX - startX;
+                let newWidth = startWidth - delta;
+                newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, newWidth));
+                sidebarWrapper.style.width = newWidth + 'px';
             });
 
             document.addEventListener('mouseup', function() {
                 if (isResizing) {
                     isResizing = false;
                     resizeHandle.classList.remove('dragging');
+                    document.body.style.userSelect = '';
                 }
             });
         }
 
-        // Initialize resize handler on page load
         attachResizeHandler();
 
-        // Render editor in right panel
         function renderEditor() {
             const sidebar = document.getElementById('sidebar');
+            const sidebarWrapper = document.getElementById('sidebar-wrapper');
             if (!sidebar) return;
 
-            // Save current width before re-rendering
-            const currentWidth = sidebar.style.width || getComputedStyle(sidebar).width;
-
-            // Always preserve the resize handle
-            const resizeHandleHtml = '<div class="resize-handle" id="resize-handle"></div>';
+            const currentWidth = sidebarWrapper ? (sidebarWrapper.style.width || getComputedStyle(sidebarWrapper).width) : '';
 
             if (selectedChunkIndex < 0 || selectedChunkIndex >= chunksData.length) {
-                sidebar.innerHTML = resizeHandleHtml + `
+                sidebar.innerHTML = `
                     <div class="sidebar-empty" id="sidebar-empty">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
@@ -1154,7 +1583,7 @@
                 const riskLevel = getRiskLevel(chunk.probability * 100);
                 const typeLabel = currentMode === 'paragraph' ? '段落' : '句子';
 
-                sidebar.innerHTML = resizeHandleHtml + `
+                sidebar.innerHTML = `
                     <div class="chunk-detail show" id="chunk-detail">
                         <div class="chunk-detail-header">
                             <div class="chunk-detail-title">${typeLabel} ${selectedChunkIndex + 1}</div>
@@ -1169,7 +1598,6 @@
                             <div class="detecting-spinner"></div>
                             <span>检测中...</span>
                         </div>
-                        <!-- Text History -->
                         <div class="text-history" id="text-history">
                             <div class="text-history-title">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1182,20 +1610,16 @@
                     </div>
                 `;
 
-                // Render history
                 renderHistory();
             }
 
-            // Restore width after re-rendering
-            if (currentWidth) {
-                sidebar.style.width = currentWidth;
+            if (currentWidth && sidebarWrapper) {
+                sidebarWrapper.style.width = currentWidth;
             }
 
-            // Re-attach resize event listeners
             attachResizeHandler();
         }
 
-        // Render text history
         function renderHistory() {
             const historyList = document.getElementById('history-list');
             if (!historyList) return;
@@ -1223,27 +1647,40 @@
             historyList.innerHTML = html;
         }
 
-        // Handle editor input with debounce
+        // 检测状态标志，防止重复请求
+        let isDetecting = false;
+
         function onEditorInput() {
-            // Clear previous timer
-            if (debounceTimer) {
-                clearTimeout(debounceTimer);
+            // 如果正在检测，忽略新的输入
+            if (isDetecting) {
+                if (debounceTimer) {
+                    clearTimeout(debounceTimer);
+                }
+                // 延长检测时间
+                debounceTimer = setTimeout(async () => {
+                    await detectEditedChunk();
+                }, 800);
+                return;
             }
 
-            // Show detecting indicator
             const detectingIndicator = document.getElementById('detecting-indicator');
             if (detectingIndicator) {
                 detectingIndicator.classList.add('show');
             }
 
-            // Set new debounce timer (500ms)
+            if (debounceTimer) {
+                clearTimeout(debounceTimer);
+            }
+
             debounceTimer = setTimeout(async () => {
                 await detectEditedChunk();
             }, 500);
         }
 
-        // Detect edited chunk text
         async function detectEditedChunk() {
+            // 防止重复检测
+            if (isDetecting) return;
+
             const editor = document.getElementById('chunk-editor');
             if (!editor) return;
 
@@ -1253,17 +1690,22 @@
                 return;
             }
 
-            // Save to history before detecting
+            isDetecting = true;
+
+            // 保存当前编辑的内容到 auto-save
+            const textInputArea = document.getElementById('text-input-area');
+            if (textInputArea && textInputArea.value) {
+                localStorage.setItem('aigc_draft_content', textInputArea.value);
+            }
+
             if (selectedChunkIndex >= 0 && selectedChunkIndex < chunksData.length) {
                 const oldChunk = chunksData[selectedChunkIndex];
-                // Add to history if text changed
                 if (oldChunk.text !== newText) {
                     textHistory.unshift({
                         text: oldChunk.text,
                         probability: oldChunk.probability,
                         timestamp: new Date().toLocaleTimeString()
                     });
-                    // Keep only last 5 history items
                     if (textHistory.length > 5) textHistory.pop();
                 }
             }
@@ -1271,25 +1713,19 @@
             try {
                 const response = await fetch('/api/detect-chunk', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        text: newText
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: newText })
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    // Update chunk data
                     if (selectedChunkIndex >= 0 && selectedChunkIndex < chunksData.length) {
                         chunksData[selectedChunkIndex].text = newText;
                         chunksData[selectedChunkIndex].probability = data.probability;
                         chunksData[selectedChunkIndex].text_length = newText.length;
                     }
 
-                    // Update UI
                     const riskLevel = getRiskLevel(data.probability * 100);
                     const probValue = document.getElementById('chunk-detail-prob');
                     if (probValue) {
@@ -1297,21 +1733,18 @@
                         probValue.className = 'prob-value ' + riskLevel;
                     }
 
-                    // Render history
                     renderHistory();
-
-                    // Re-render chunks and update stats
                     renderChunks();
                     updateOverallStats();
                 }
             } catch (error) {
                 console.error('Chunk detection error:', error);
             } finally {
+                isDetecting = false;
                 hideDetectingIndicator();
             }
         }
 
-        // Hide detecting indicator
         function hideDetectingIndicator() {
             const detectingIndicator = document.getElementById('detecting-indicator');
             if (detectingIndicator) {
@@ -1319,7 +1752,6 @@
             }
         }
 
-        // Update overall statistics
         function updateOverallStats() {
             const totalChunksEl = document.getElementById('total-chunks');
             const overallProbEl = document.getElementById('overall-prob');
@@ -1327,7 +1759,6 @@
             totalChunksEl.textContent = chunksData.length;
 
             if (chunksData.length > 0) {
-                // Calculate weighted average
                 let totalChars = 0;
                 let weightedSum = 0;
 
@@ -1348,7 +1779,6 @@
             }
         }
 
-        // Get risk level based on probability
         function getRiskLevel(probability) {
             if (probability > 50) {
                 return 'high';
@@ -1359,12 +1789,26 @@
             }
         }
 
-        // Escape HTML to prevent XSS
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // ==================== 初始化 ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            initAutoSave();
+            setupAutoSave();
+        });
+
+        // 页面关闭前保存
+        window.addEventListener('beforeunload', () => {
+            const content = document.getElementById('text-input-area').value;
+            if (content && content.length > 0) {
+                localStorage.setItem('aigc_draft_content', content);
+            }
+        });
     </script>
 </body>
 </html>
