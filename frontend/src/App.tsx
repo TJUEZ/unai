@@ -145,6 +145,7 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [chunkSize, setChunkSize] = useState<string>('original')
   const [selectedChunk, setSelectedChunk] = useState<number | null>(null)
+  const [jumpingChunk, setJumpingChunk] = useState<number | null>(null)
   const [editorPlainText, setEditorPlainText] = useState<string>('')
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
@@ -343,12 +344,25 @@ function App() {
       <div className="preview-document">
         {detectionResult.chunks.map((chunk, index) => {
           const aiLevel = getAILevel(chunk.probability)
+          const isJumping = jumpingChunk === index
+          const isSelected = selectedChunk === index
+
           return (
             <div
               key={index}
-              className={`text-chunk ${aiLevel} ${selectedChunk === index ? 'selected' : ''}`}
+              ref={(el) => {
+                // 跳转完成后自动滚动到视图
+                if (isJumping && el) {
+                  setTimeout(() => {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    setJumpingChunk(null)
+                  }, 50)
+                }
+              }}
+              className={`text-chunk ${aiLevel} ${isSelected ? 'selected' : ''} ${isJumping ? 'jump-to' : ''}`}
               onClick={() => {
                 setSelectedChunk(index)
+                setJumpingChunk(index)
                 scrollToChunk(index)
               }}
             >

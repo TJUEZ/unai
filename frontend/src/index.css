@@ -684,3 +684,70 @@ body {
     padding: var(--space-lg);
   }
 }
+
+/* ========================
+   块跳转动画
+   ======================== */
+
+/* 跳转时的高亮闪光效果 */
+@keyframes chunk-highlight-flash {
+  0% {
+    background-color: var(--theme-accent);
+    transform: scale(1.02);
+  }
+  100% {
+    background-color: var(--theme-surface);
+    transform: scale(1);
+  }
+}
+
+/* 跳转时的边框动画 */
+@keyframes chunk-highlight-border {
+  0% {
+    border-left-width: 8px;
+    box-shadow: 0 0 0 2px var(--theme-accent);
+  }
+  100% {
+    border-left-width: 3px;
+    box-shadow: none;
+  }
+}
+
+/* 块选中时的呼吸效果 */
+@keyframes chunk-pulse {
+  0%, 100% {
+    box-shadow: 0 2px 12px rgba(194, 58, 43, 0.1);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(194, 58, 43, 0.2);
+  }
+}
+
+/* 跳转时的过渡动画 */
+.text-chunk.jump-to {
+  animation:
+    chunk-highlight-flash 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards,
+    chunk-highlight-border 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* 选中块的持续呼吸效果 */
+.text-chunk.selected {
+  animation: chunk-pulse 2s ease-in-out infinite;
+}
+
+/* 预览内容区域滚动动画 */
+.preview-content {
+  scroll-behavior: smooth;
+}
+
+/* 减少动画模式 */
+@media (prefers-reduced-motion: reduce) {
+  .text-chunk.jump-to,
+  .text-chunk.selected {
+    animation: none;
+  }
+
+  .preview-content {
+    scroll-behavior: auto;
+  }
+}
