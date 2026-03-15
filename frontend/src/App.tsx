@@ -1,7 +1,61 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { SuperDocEditor } from '@superdoc-dev/react'
 import type { SuperDocRef } from '@superdoc-dev/react'
 import '@superdoc-dev/react/style.css'
+
+// SVG Icons
+const IconFile = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14,2 14,8 20,8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10,9 9,9 8,9" />
+  </svg>
+)
+
+const IconSearch = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+)
+
+const IconChart = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="20" x2="18" y2="10" />
+    <line x1="12" y1="20" x2="12" y2="4" />
+    <line x1="6" y1="20" x2="6" y2="14" />
+  </svg>
+)
+
+const IconDownload = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7,10 12,15 17,10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+)
+
+const IconSun = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="5" />
+    <line x1="12" y1="1" x2="12" y2="3" />
+    <line x1="12" y1="21" x2="12" y2="23" />
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+    <line x1="1" y1="12" x2="3" y2="12" />
+    <line x1="21" y1="12" x2="23" y2="12" />
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+  </svg>
+)
+
+const IconMoon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
+)
 
 // 类型定义
 interface ChunkDetection {
@@ -9,6 +63,7 @@ interface ChunkDetection {
   probability: number
   index: number
   text_length: number
+  start_pos: number
 }
 
 interface DetectionResult {
@@ -74,9 +129,14 @@ const ToolbarButton = ({
   )
 }
 
-// 主应用组件
+const getAILevel = (probability: number): 'high' | 'medium' | 'low' | 'human' => {
+  if (probability > 0.7) return 'high'
+  if (probability > 0.4) return 'medium'
+  if (probability > 0.2) return 'low'
+  return 'human'
+}
+
 function App() {
-  // 状态
   const [docFile, setDocFile] = useState<File | null>(null)
   const [mode] = useState<'editing' | 'viewing' | 'suggesting'>('editing')
   const [isReady, setIsReady] = useState(false)
@@ -86,37 +146,118 @@ function App() {
   const [chunkSize, setChunkSize] = useState<string>('original')
   const [selectedChunk, setSelectedChunk] = useState<number | null>(null)
   const [editorPlainText, setEditorPlainText] = useState<string>('')
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   const editorRef = useRef<SuperDocRef>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // 跳转到指定块并在编辑器中高亮显示
+  // 主题切换
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
+    if (savedTheme) {
+      setTheme(savedTheme)
+      document.documentElement.setAttribute('data-theme', savedTheme)
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark')
+      document.documentElement.setAttribute('data-theme', 'dark')
+    }
+  }, [])
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+    document.documentElement.setAttribute('data-theme', newTheme)
+  }
+
+  // 文本规范化
+  const normalizeText = (text: string): string => {
+    return text.replace(/[\s\n\r]+/g, ' ').trim()
+  }
+
+  const fuzzyMatch = (source: string, target: string): number => {
+    const s = normalizeText(source)
+    const t = normalizeText(target)
+    if (!s || !t) return 0
+    const minLen = Math.min(s.length, t.length)
+    const maxLen = Math.max(s.length, t.length)
+    if (maxLen === 0) return 1
+    let matches = 0
+    for (let i = 0; i < minLen; i++) {
+      if (s[i] === t[i]) matches++
+    }
+    return matches / maxLen
+  }
+
   const scrollToChunk = useCallback((index: number) => {
     const instance = editorRef.current?.getInstance()
-    if (!instance || !detectionResult?.chunks[index]) return
+    if (!instance || !detectionResult) return
 
     const chunk = detectionResult.chunks[index]
-    const chunkText = chunk.text
+    if (!chunk) return
 
-    try {
-      // 使用搜索功能查找文本并高亮
-      // @ts-ignore - SuperDoc可能有search方法
-      const searchResult = instance.search?.(chunkText, { highlight: true })
+    const chunkStartPos = chunk.start_pos || 0
+    const chunkText = chunk.text.trim()
 
-      if (searchResult && searchResult.length > 0) {
-        // 跳转到第一个匹配结果
-        // @ts-ignore
-        instance.goToSearchResult?.(searchResult[0])
-        // 聚焦编辑器
-        // @ts-ignore
-        instance.focus?.()
-      }
-    } catch (e) {
-      console.error('跳转失败:', e)
+    let editorText = ''
+    if (typeof instance.getText === 'function') {
+      editorText = instance.getText()
     }
-  }, [detectionResult])
+    if (!editorText && editorPlainText) {
+      editorText = editorPlainText
+    }
 
-  // 获取编辑器文本并检测
+    if (!editorText) return
+
+    const searchRadius = 50
+    let foundPos = -1
+    const searchText = chunkText.substring(0, 50)
+
+    for (let offset = 0; offset <= searchRadius; offset++) {
+      const pos1 = chunkStartPos + offset
+      if (pos1 + searchText.length <= editorText.length) {
+        const candidate = editorText.substring(pos1, pos1 + searchText.length)
+        if (fuzzyMatch(candidate, searchText) > 0.85) {
+          foundPos = pos1
+          break
+        }
+      }
+      const pos2 = chunkStartPos - offset
+      if (pos2 >= 0 && pos2 + searchText.length <= editorText.length) {
+        const candidate = editorText.substring(pos2, pos2 + searchText.length)
+        if (fuzzyMatch(candidate, searchText) > 0.85) {
+          foundPos = pos2
+          break
+        }
+      }
+    }
+
+    if (foundPos === -1) {
+      const normalizedEditor = normalizeText(editorText)
+      const normalizedChunk = normalizeText(searchText)
+      foundPos = normalizedEditor.indexOf(normalizedChunk)
+    }
+
+    if (foundPos === -1) {
+      // @ts-ignore
+      if (instance.search && chunk.text) {
+        const searchText2 = chunk.text.substring(0, 30).trim()
+        if (searchText2.length >= 5) {
+          try {
+            // @ts-ignore
+            const results = instance.search(searchText2, { highlight: true })
+            if (results && results.length > 0) {
+              // @ts-ignore
+              instance.goToSearchResult?.(results[0])
+              return
+            }
+          } catch (e) {}
+        }
+      }
+    }
+
+  }, [detectionResult, editorPlainText])
+
   const handleDetect = useCallback(async () => {
     const instance = editorRef.current?.getInstance()
     if (!instance) return
@@ -124,7 +265,6 @@ function App() {
     setIsDetecting(true)
     setError(null)
     try {
-      // 获取纯文本
       let plainText = ''
       if (typeof instance.getText === 'function') {
         plainText = instance.getText()
@@ -141,9 +281,7 @@ function App() {
         return
       }
 
-      // 保存原始文本用于后续跳转
       setEditorPlainText(plainText)
-
       const result = await detectAPI(plainText, chunkSize)
       setDetectionResult(result)
     } catch (err) {
@@ -154,7 +292,6 @@ function App() {
     }
   }, [chunkSize])
 
-  // 导出功能
   const handleExport = async (format: 'docx' | 'txt' | 'markdown') => {
     const instance = editorRef.current?.getInstance()
     if (!instance) return
@@ -162,14 +299,12 @@ function App() {
     if (format === 'docx') {
       await instance.export({ triggerDownload: true })
     } else {
-      // 获取HTML并转换
       const html = instance.getHTML()
       const div = window.document.createElement('div')
       div.innerHTML = html
       let content = div.textContent || div.innerText || ''
 
       if (format === 'markdown') {
-        // 简单HTML到Markdown转换
         content = content
           .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
           .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
@@ -183,7 +318,6 @@ function App() {
           .replace(/<[^>]+>/g, '')
       }
 
-      // 下载文件
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const a = window.document.createElement('a')
@@ -194,103 +328,54 @@ function App() {
     }
   }
 
-  // 渲染预览 - 带AI概率显示和编辑功能
   const renderPreview = () => {
     if (!detectionResult || !detectionResult.chunks.length) {
       return (
         <div className="preview-document">
-          <p style={{ color: '#999', textAlign: 'center', marginTop: '100px' }}>
-            点击"开始检测"查看预览效果
+          <p style={{ color: 'var(--theme-text-muted)', textAlign: 'center', marginTop: '80px', fontSize: '14px' }}>
+            点击「开始检测」查看分析结果
           </p>
         </div>
       )
     }
 
     return (
-      <div className="preview-document" style={{ padding: '20px' }}>
-        {detectionResult.chunks.map((chunk, index) => (
-          <div
-            key={index}
-            className={`text-chunk ${selectedChunk === index ? 'selected' : ''}`}
-            style={{
-              backgroundColor:
-                chunk.probability > 0.7 ? 'rgba(244, 67, 54, 0.15)' :
-                chunk.probability > 0.4 ? 'rgba(255, 152, 0, 0.15)' :
-                chunk.probability > 0.2 ? 'rgba(255, 193, 7, 0.15)' :
-                'rgba(76, 175, 80, 0.15)',
-              borderLeft: `4px solid ${
-                chunk.probability > 0.7 ? '#f44336' :
-                chunk.probability > 0.4 ? '#ff9800' :
-                chunk.probability > 0.2 ? '#ffc107' :
-                '#4caf50'
-              }`,
-              padding: '12px 16px',
-              margin: '8px 0',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              display: 'block',
-              width: '100%',
-              boxShadow: selectedChunk === index ? '0 0 0 2px var(--theme-accent)' : 'none',
-            }}
-            onClick={() => {
-              setSelectedChunk(index)
-              scrollToChunk(index)
-            }}
-          >
-            {/* AI概率徽章 - 放在顶部 */}
-            <div style={{ marginBottom: '8px' }}>
-              <span
-                style={{
-                  display: 'inline-block',
-                  fontSize: '12px',
-                  padding: '3px 10px',
-                  borderRadius: '12px',
-                  backgroundColor:
-                    chunk.probability > 0.7 ? '#f44336' :
-                    chunk.probability > 0.4 ? '#ff9800' :
-                    chunk.probability > 0.2 ? '#ffc107' :
-                    '#4caf50',
-                  color: '#fff',
-                  fontWeight: 600,
-                }}
-              >
-                块{index + 1}: {Math.round(chunk.probability * 100)}% AI
-              </span>
-              <span style={{ marginLeft: '10px', fontSize: '12px', color: '#666' }}>
-                {chunk.text_length}字
-              </span>
+      <div className="preview-document">
+        {detectionResult.chunks.map((chunk, index) => {
+          const aiLevel = getAILevel(chunk.probability)
+          return (
+            <div
+              key={index}
+              className={`text-chunk ${aiLevel} ${selectedChunk === index ? 'selected' : ''}`}
+              onClick={() => {
+                setSelectedChunk(index)
+                scrollToChunk(index)
+              }}
+            >
+              <div>
+                <span className={`ai-badge ${aiLevel}`}>
+                  {Math.round(chunk.probability * 100)}% AI
+                </span>
+                <span className="chunk-meta">
+                  {chunk.text_length} 字
+                </span>
+              </div>
+              <div className="chunk-text">
+                {chunk.text}
+              </div>
             </div>
-            {/* 文本内容 */}
-            <div style={{
-              fontSize: '15px',
-              lineHeight: '1.8',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              fontFamily: 'var(--font-serif)'
-            }}>
-              {chunk.text}
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     )
   }
-
-  // 处理块编辑 - 重新检测单个块
-  const handleChunkEdit = useCallback(async (index: number, newText: string) => {
-    if (!detectionResult) return
-
-    const newChunks = [...detectionResult.chunks]
-    newChunks[index] = { ...newChunks[index], text: newText }
-    setDetectionResult({ ...detectionResult, chunks: newChunks })
-  }, [detectionResult])
 
   return (
     <div className="app-container">
       {/* 左侧工具栏 */}
       <aside className="sidebar" aria-label="工具栏">
         <ToolbarButton
-          icon={<span aria-hidden="true">📄</span>}
+          icon={<IconFile />}
           label="打开文件"
           ariaLabel="打开文件"
           onClick={() => fileInputRef.current?.click()}
@@ -310,7 +395,7 @@ function App() {
         <div className="sidebar-divider" />
 
         <ToolbarButton
-          icon={<span aria-hidden="true">🔍</span>}
+          icon={<IconSearch />}
           label="检测"
           ariaLabel={isDetecting ? "检测中" : "开始AI检测"}
           onClick={handleDetect}
@@ -318,33 +403,44 @@ function App() {
         />
 
         <ToolbarButton
-          icon={<span aria-hidden="true">📊</span>}
+          icon={<IconChart />}
           label="统计"
           ariaLabel="查看检测统计"
           active={!!detectionResult}
         />
 
-        <div className="sidebar-divider" aria-hidden="true" />
+        <div className="sidebar-divider" />
 
         <ToolbarButton
-          icon={<span aria-hidden="true">💾</span>}
+          icon={<IconDownload />}
           label="导出"
           ariaLabel="导出文档"
           showDropdown
           dropdownContent={
             <>
               <button className="dropdown-item" role="menuitem" onClick={() => handleExport('docx')}>
-                <span aria-hidden="true">📝</span> Word文档 (.docx)
+                Word文档
               </button>
               <button className="dropdown-item" role="menuitem" onClick={() => handleExport('txt')}>
-                <span aria-hidden="true">📄</span> 纯文本 (.txt)
+                纯文本
               </button>
               <button className="dropdown-item" role="menuitem" onClick={() => handleExport('markdown')}>
-                <span aria-hidden="true">📋</span> Markdown (.md)
+                Markdown
               </button>
             </>
           }
         />
+
+        <div className="sidebar-divider" />
+
+        {/* 主题切换 */}
+        <button
+          className="theme-toggle"
+          onClick={toggleTheme}
+          aria-label={theme === 'light' ? "切换到深色模式" : "切换到浅色模式"}
+        >
+          {theme === 'light' ? <IconMoon /> : <IconSun />}
+        </button>
       </aside>
 
       {/* 主区域 */}
@@ -352,34 +448,29 @@ function App() {
         {/* 编辑面板 */}
         <div className="editor-panel">
           <div className="panel-header">
-            <span className="panel-title">编辑区</span>
+            <span className="panel-title">文档编辑</span>
             <div className="detection-bar">
               {detectionResult && (
                 <>
                   <div className="overall-probability" role="status" aria-live="polite">
                     <span>AI概率:</span>
-                    <div className="probability-bar" role="progressbar" aria-valuenow={Math.round(detectionResult.overall_probability * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="AI生成概率">
+                    <div className="probability-bar" role="progressbar" aria-valuenow={Math.round(detectionResult.overall_probability * 100)} aria-valuemin={0} aria-valuemax={100}>
                       <div
                         className="probability-fill"
                         style={{ width: `${detectionResult.overall_probability * 100}%` }}
-                        aria-hidden="true"
                       />
                     </div>
                     <span>{(detectionResult.overall_probability * 100).toFixed(1)}%</span>
                   </div>
-                  <span className="sr-only">
-                    检测完成，AI生成概率为{(detectionResult.overall_probability * 100).toFixed(1)}%，
-                    共{detectionResult.chunks.length}个段落
-                  </span>
                 </>
               )}
-              <button className="btn btn-primary" onClick={handleDetect} disabled={isDetecting} aria-busy={isDetecting}>
+              <button className="btn btn-primary" onClick={handleDetect} disabled={isDetecting}>
                 {isDetecting ? '检测中...' : '开始检测'}
               </button>
             </div>
           </div>
           {error && (
-            <div role="alert" style={{ padding: '8px 16px', background: '#fee2e2', color: '#dc2626', borderBottom: '1px solid #fecaca' }}>
+            <div className="error-banner" role="alert">
               {error}
             </div>
           )}
@@ -419,15 +510,13 @@ function App() {
         {/* 预览面板 */}
         <div className="preview-panel">
           <div className="panel-header">
-            <span className="panel-title">检测结果预览</span>
-            {/* 分块大小选择器 */}
+            <span className="panel-title">检测结果</span>
             <div className="detection-bar">
               <select
                 value={chunkSize}
                 onChange={(e) => setChunkSize(e.target.value)}
                 className="model-select"
                 aria-label="分块大小"
-                style={{ marginRight: '8px' }}
               >
                 <option value="original">原文</option>
                 <option value="200">200字/块</option>
@@ -435,10 +524,9 @@ function App() {
                 <option value="1000">1000字/块</option>
               </select>
               <button
-                className="btn btn-primary"
+                className="btn btn-secondary"
                 onClick={handleDetect}
                 disabled={isDetecting}
-                style={{ padding: '6px 12px', fontSize: '12px' }}
               >
                 {isDetecting ? '检测中...' : '重新检测'}
               </button>
@@ -454,9 +542,9 @@ function App() {
             </div>
             {detectionResult && (
               <div className="status-item">
-                <span>字数: {detectionResult.text_length}</span>
-                <span>•</span>
-                <span>段落: {detectionResult.chunks.length}</span>
+                <span>{detectionResult.text_length} 字</span>
+                <span>·</span>
+                <span>{detectionResult.chunks.length} 个段落</span>
               </div>
             )}
           </div>
