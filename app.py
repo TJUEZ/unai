@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification
@@ -102,62 +102,92 @@ def split_by_original_paragraphs(text):
     return [p.strip() for p in paragraphs if p.strip()]
 
 def split_by_paragraphs(text, min_chunk_size=100):
-    """Split text by newlines, merging small paragraphs into larger chunks"""
+    """Split text into chunks, preserving paragraphs and sentence boundaries"""
     if not text:
         return []
 
-    # First split by newlines
-    raw_paragraphs = re.split(r'\n+', text)
-    paragraphs = [p.strip() for p in raw_paragraphs if p.strip()]
+    # Split by double newlines to get paragraphs
+    paragraphs = re.split(r'\n\s*\n', text)
+    paragraphs = [p.strip() for p in paragraphs if p.strip()]
+
+    if not paragraphs:
+        # No paragraphs, try single newlines
+        paragraphs = re.split(r'\n+', text)
+        paragraphs = [p.strip() for p in paragraphs if p.strip()]
 
     if not paragraphs:
         return []
 
-    # Merge small paragraphs into larger chunks
+    # If total text is smaller than 1.3x target, don't split
+    total_len = sum(len(p) for p in paragraphs)
+    if total_len < min_chunk_size * 1.3:
+        return paragraphs
+
     chunks = []
-    current_chunk = ""
 
     for para in paragraphs:
-        if len(current_chunk) + len(para) <= min_chunk_size:
-            # Add to current chunk
-            if current_chunk:
-                current_chunk += "\n" + para
+        para = para.strip()
+        if not para:
+            continue
+
+        # Skip paragraphs smaller than half the target - keep as-is
+        if len(para) < min_chunk_size * 0.5:
+            chunks.append(para)
+            continue
+
+        # Split paragraph into sentences (preserving punctuation)
+        sentences = re.split(r'(?<=[。！？.!?])\s*', para)
+        sentences = [s.strip() for s in sentences if s.strip()]
+
+        if not sentences:
+            sentences = [para]
+
+        # Group sentences into chunks targeting min_chunk_size
+        current_chunk = ""
+        for sent in sentences:
+            if not current_chunk:
+                current_chunk = sent
+            elif len(current_chunk) + len(sent) <= min_chunk_size:
+                current_chunk += " " + sent
+            elif len(sent) >= min_chunk_size:
+                if current_chunk:
+                    chunks.append(current_chunk)
+                current_chunk = sent
             else:
-                current_chunk = para
-        else:
-            # Current chunk is big enough, save it
-            if current_chunk:
-                chunks.append(current_chunk)
+                if len(current_chunk) + len(sent) <= min_chunk_size * 1.15:
+                    current_chunk += " " + sent
+                else:
+                    chunks.append(current_chunk)
+                    current_chunk = sent
 
-            # If this paragraph alone is bigger than min_chunk_size, use it directly
-            if len(para) >= min_chunk_size:
-                chunks.append(para)
-                current_chunk = ""
-            else:
-                # Start new chunk with this paragraph
-                current_chunk = para
+        if current_chunk:
+            chunks.append(current_chunk)
 
-    # Don't forget the last chunk
-    if current_chunk:
-        chunks.append(current_chunk)
+    # Merge small chunks - be more aggressive
+    # If chunk is less than 50% of target, try to merge with neighbor
+    small_threshold = min_chunk_size * 0.5
 
-    # If we still have tiny chunks, merge them all
-    if chunks and any(len(c) < min_chunk_size for c in chunks):
-        merged = "\n".join(chunks)
-        # Split into larger chunks
-        words = merged.split()
-        current = ""
-        for word in words:
-            if len(current) + len(word) + 1 <= min_chunk_size:
-                current += " " + word if current else word
-            else:
-                if current:
-                    chunks.append(current)
-                current = word
-        if current:
-            chunks.append(current)
+    result = []
+    i = 0
+    while i < len(chunks):
+        chunk = chunks[i]
 
-    return chunks
+        if len(chunk) < small_threshold:
+            # Try merge with previous
+            if result and len(result[-1]) + len(chunk) <= min_chunk_size * 1.4:
+                result[-1] = result[-1] + " " + chunk
+                i += 1
+                continue
+            # Try merge with next
+            if i + 1 < len(chunks) and len(chunk) + len(chunks[i + 1]) <= min_chunk_size * 1.4:
+                result.append(chunk + " " + chunks[i + 1])
+                i += 2
+                continue
+
+        result.append(chunk)
+        i += 1
+
+    return result
 
 def split_by_sentences(text):
     """Split text by sentence endings (Chinese and English)"""
@@ -186,7 +216,19 @@ def detect_chunk(text):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # Only serve React frontend
+    frontend_build = os.path.join(os.path.dirname(__file__), 'frontend', 'dist', 'index.html')
+    if os.path.exists(frontend_build):
+        return send_from_directory(os.path.join(os.path.dirname(__file__), 'frontend', 'dist'), 'index.html')
+    return jsonify({'error': 'Frontend not found. Please run npm run build in frontend directory.'}), 404
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    """Serve static files from frontend build"""
+    frontend_dist = os.path.join(os.path.dirname(__file__), 'frontend', 'dist')
+    if os.path.exists(frontend_dist):
+        return send_from_directory(frontend_dist, filename)
+    return jsonify({'error': 'Static file not found'}), 404
 
 @app.route('/api/detect', methods=['POST'])
 def detect():
@@ -344,26 +386,24 @@ def detect_full():
     try:
         data = request.get_json()
         text = data.get('text', '')
-        mode = data.get('mode', 'paragraph')  # 'paragraph' or 'sentence'
         chunk_size = data.get('chunk_size', 'original')  # 'original' or number
 
         if not text or not text.strip():
             return jsonify({'success': False, 'error': '请输入要检测的文本'}), 400
 
-        if chunk_size == 'original':
+        # Determine mode and chunk size
+        if chunk_size == 'original' or chunk_size == 'original':
             # Split by original paragraphs (newlines only, no merging)
             chunks = split_by_original_paragraphs(text)
             mode = 'original'
-        elif mode == 'paragraph':
+        else:
+            # Try to parse as number
             try:
                 min_size = int(chunk_size) if chunk_size else 100
-            except:
+            except (ValueError, TypeError):
                 min_size = 100
             chunks = split_by_paragraphs(text, min_chunk_size=min_size)
-        elif mode == 'sentence':
-            chunks = split_by_sentences(text)
-        else:
-            return jsonify({'success': False, 'error': '无效的mode参数，请使用"paragraph"或"sentence"'}), 400
+            mode = 'paragraph'
 
         if not chunks:
             return jsonify({'success': False, 'error': '文本分割失败'}), 400
