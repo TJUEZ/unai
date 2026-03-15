@@ -85,6 +85,18 @@ const detectAPI = async (text: string, chunkSize: string = 'original'): Promise<
   return data
 }
 
+// 单块检测API
+const detectChunkAPI = async (text: string): Promise<{ probability: number }> => {
+  const response = await fetch('/api/detect', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
+  })
+  const data = await response.json()
+  if (!data.success) throw new Error(data.error || '检测失败')
+  return { probability: data.probability }
+}
+
 // 工具栏按钮组件
 const ToolbarButton = ({
   icon,
@@ -147,6 +159,8 @@ function App() {
   const [selectedChunk, setSelectedChunk] = useState<number | null>(null)
   const [jumpingChunk, setJumpingChunk] = useState<number | null>(null)
   const [editorPlainText, setEditorPlainText] = useState<string>('')
+  const [detectingChunk, setDetectingChunk] = useState<number | null>(null)
+  const [editingChunk, setEditingChunk] = useState<number | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   const editorRef = useRef<SuperDocRef>(null)
@@ -293,6 +307,41 @@ function App() {
     }
   }, [chunkSize])
 
+  // 重新检测单个块
+  const handleChunkDetect = useCallback(async (index: number, newText: string) => {
+    if (!detectionResult) return
+
+    setDetectingChunk(index)
+    try {
+      const result = await detectChunkAPI(newText)
+
+      // 更新该块的概率
+      const newChunks = [...detectionResult.chunks]
+      newChunks[index] = {
+        ...newChunks[index],
+        text: newText,
+        probability: result.probability,
+        text_length: newText.length
+      }
+
+      // 重新计算整体概率
+      const totalProb = newChunks.reduce((sum, c) => sum + c.probability, 0)
+      const overallProb = totalProb / newChunks.length
+
+      setDetectionResult({
+        ...detectionResult,
+        chunks: newChunks,
+        overall_probability: overallProb,
+        text_length: newChunks.reduce((sum, c) => sum + c.text_length, 0)
+      })
+    } catch (err) {
+      console.error('单块检测失败:', err)
+    } finally {
+      setDetectingChunk(null)
+      setEditingChunk(null)
+    }
+  }, [detectionResult])
+
   const handleExport = async (format: 'docx' | 'txt' | 'markdown') => {
     const instance = editorRef.current?.getInstance()
     if (!instance) return
@@ -346,12 +395,13 @@ function App() {
           const aiLevel = getAILevel(chunk.probability)
           const isJumping = jumpingChunk === index
           const isSelected = selectedChunk === index
+          const isEditing = editingChunk === index
+          const isDetecting = detectingChunk === index
 
           return (
             <div
               key={index}
               ref={(el) => {
-                // 跳转完成后自动滚动到视图
                 if (isJumping && el) {
                   setTimeout(() => {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -361,22 +411,88 @@ function App() {
               }}
               className={`text-chunk ${aiLevel} ${isSelected ? 'selected' : ''} ${isJumping ? 'jump-to' : ''}`}
               onClick={() => {
-                setSelectedChunk(index)
-                setJumpingChunk(index)
-                scrollToChunk(index)
+                if (!isEditing) {
+                  setSelectedChunk(index)
+                  setJumpingChunk(index)
+                  scrollToChunk(index)
+                }
               }}
             >
-              <div>
-                <span className={`ai-badge ${aiLevel}`}>
-                  {Math.round(chunk.probability * 100)}% AI
-                </span>
-                <span className="chunk-meta">
-                  {chunk.text_length} 字
-                </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div>
+                  <span className={`ai-badge ${aiLevel}`}>
+                    {Math.round(chunk.probability * 100)}% AI
+                  </span>
+                  <span className="chunk-meta">
+                    {chunk.text_length} 字
+                  </span>
+                </div>
+                {!isEditing && (
+                  <button
+                    className="btn btn-secondary"
+                    style={{ padding: '4px 10px', fontSize: '11px' }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setEditingChunk(index)
+                    }}
+                  >
+                    编辑
+                  </button>
+                )}
               </div>
-              <div className="chunk-text">
-                {chunk.text}
-              </div>
+
+              {isEditing ? (
+                <div onClick={(e) => e.stopPropagation()}>
+                  <textarea
+                    className="chunk-editor"
+                    defaultValue={chunk.text}
+                    style={{
+                      width: '100%',
+                      minHeight: '120px',
+                      padding: '12px',
+                      border: '1px solid var(--theme-border)',
+                      borderRadius: '4px',
+                      background: 'var(--theme-surface)',
+                      color: 'var(--theme-text)',
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '14px',
+                      lineHeight: '1.8',
+                      resize: 'vertical'
+                    }}
+                    placeholder="在此修改文本..."
+                  />
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px', justifyContent: 'flex-end' }}>
+                    <button
+                      className="btn btn-secondary"
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setEditingChunk(null)
+                      }}
+                    >
+                      取消
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      style={{ padding: '6px 12px', fontSize: '12px' }}
+                      disabled={isDetecting}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const textarea = document.querySelector(`.chunk-editor`) as HTMLTextAreaElement
+                        if (textarea) {
+                          handleChunkDetect(index, textarea.value)
+                        }
+                      }}
+                    >
+                      {isDetecting ? '检测中...' : '重新检测'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="chunk-text">
+                  {chunk.text}
+                </div>
+              )}
             </div>
           )
         })}
