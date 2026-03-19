@@ -189,6 +189,47 @@ const WordWarningModal = ({
   )
 }
 
+const PlainTextEditor = ({
+  value,
+  onChange,
+  onDetect
+}: {
+  value: string
+  onChange: (text: string) => void
+  onDetect: () => void
+}) => {
+  return (
+    <div className="plaintext-editor">
+      <textarea
+        className="plaintext-textarea"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="请在此输入或粘贴需要检测的文本..."
+        spellCheck={false}
+      />
+      <div className="plaintext-actions">
+        <button
+          className="btn btn-secondary"
+          onClick={() => {
+            const totalChars = value.length
+            const chunks = Math.ceil(totalChars / 500)
+            alert(`总计 ${totalChars} 字，预计分为 ${chunks} 个段落进行检测`)
+          }}
+        >
+          字数统计
+        </button>
+        <button
+          className="btn btn-primary"
+          onClick={onDetect}
+          disabled={!value.trim()}
+        >
+          开始检测
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const [docFile, setDocFile] = useState<File | null>(null)
   const [mode] = useState<'editing' | 'viewing' | 'suggesting'>('editing')
@@ -697,7 +738,30 @@ function App() {
             </div>
           )}
           <div className="panel-content">
-            {docFile ? (
+            {editorMode === 'plaintext' ? (
+              <PlainTextEditor
+                value={plainTextContent}
+                onChange={setPlainTextContent}
+                onDetect={async () => {
+                  if (!plainTextContent.trim()) {
+                    setError('请先输入或导入文本内容')
+                    return
+                  }
+                  setIsDetecting(true)
+                  setError(null)
+                  try {
+                    setEditorPlainText(plainTextContent)
+                    const result = await detectAPI(plainTextContent, chunkSize)
+                    setDetectionResult(result)
+                  } catch (err) {
+                    const errorMessage = err instanceof Error ? err.message : '检测失败，请稍后重试'
+                    setError(errorMessage)
+                  } finally {
+                    setIsDetecting(false)
+                  }
+                }}
+              />
+            ) : docFile ? (
               <>
                 <SuperDocEditor
                   ref={editorRef}
