@@ -298,14 +298,23 @@ body {
 /* 面板 */
 .editor-panel,
 .preview-panel {
-  flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
 }
 
-.editor-panel {
-  border-right: 1px solid var(--theme-border);
+/* 可拖拽分隔条 */
+.panel-resizer {
+  width: 6px;
+  background: var(--theme-bg-secondary);
+  cursor: col-resize;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.panel-resizer:hover {
+  background: var(--theme-accent);
 }
 
 .panel-header {
@@ -687,6 +696,11 @@ body {
     border-right: none;
     border-bottom: 1px solid var(--theme-border);
     min-height: 40vh;
+    width: 100% !important;
+  }
+
+  .panel-resizer {
+    display: none;
   }
 
   .preview-document {

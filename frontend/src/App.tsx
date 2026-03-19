@@ -229,6 +229,7 @@ function App() {
   })
   const [showWordWarning, setShowWordWarning] = useState(false)
   const [plainTextContent, setPlainTextContent] = useState('')
+  const [splitRatio, setSplitRatio] = useState(0.5)
 
   const editorRef = useRef<SuperDocRef>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -687,7 +688,7 @@ function App() {
       {/* 主区域 */}
       <div className="main-area">
         {/* 编辑面板 */}
-        <div className="editor-panel">
+        <div className="editor-panel" style={{ width: `${splitRatio * 100}%` }}>
           <div className="panel-header">
             <span className="panel-title">文档编辑</span>
             <div className="detection-bar">
@@ -773,6 +774,31 @@ function App() {
             )}
           </div>
         </div>
+
+        {/* 可拖拽分隔条 */}
+        <div
+          className="panel-resizer"
+          onMouseDown={(e) => {
+            e.preventDefault()
+            const startX = e.clientX
+            const startRatio = splitRatio
+            const containerWidth = e.currentTarget.parentElement?.offsetWidth || 1
+
+            const onMouseMove = (e: MouseEvent) => {
+              const delta = e.clientX - startX
+              const newRatio = startRatio + delta / containerWidth
+              setSplitRatio(Math.max(0.2, Math.min(0.8, newRatio)))
+            }
+
+            const onMouseUp = () => {
+              document.removeEventListener('mousemove', onMouseMove)
+              document.removeEventListener('mouseup', onMouseUp)
+            }
+
+            document.addEventListener('mousemove', onMouseMove)
+            document.addEventListener('mouseup', onMouseUp)
+          }}
+        />
 
         {/* 预览面板 */}
         <div className="preview-panel">
