@@ -192,11 +192,15 @@ const WordWarningModal = ({
 const PlainTextEditor = ({
   value,
   onChange,
-  onDetect
+  onDetect,
+  isDetecting,
+  hasResult
 }: {
   value: string
   onChange: (text: string) => void
   onDetect: () => void
+  isDetecting: boolean
+  hasResult: boolean
 }) => {
   return (
     <div className="plaintext-editor">
@@ -221,9 +225,9 @@ const PlainTextEditor = ({
         <button
           className="btn btn-primary"
           onClick={onDetect}
-          disabled={!value.trim()}
+          disabled={isDetecting || !value.trim()}
         >
-          开始检测
+          {isDetecting ? '检测中...' : (hasResult ? '重新检测' : '开始检测')}
         </button>
       </div>
     </div>
@@ -268,6 +272,13 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem('editorMode', editorMode)
+  }, [editorMode])
+
+  // 纯文本模式下直接设置 isReady 为 true
+  useEffect(() => {
+    if (editorMode === 'plaintext') {
+      setIsReady(true)
+    }
   }, [editorMode])
 
   const toggleTheme = () => {
@@ -728,7 +739,7 @@ function App() {
                 </>
               )}
               <button className="btn btn-primary" onClick={handleDetect} disabled={isDetecting}>
-                {isDetecting ? '检测中...' : '开始检测'}
+                {isDetecting ? '检测中...' : (detectionResult ? '重新检测' : '开始检测')}
               </button>
             </div>
           </div>
@@ -742,6 +753,8 @@ function App() {
               <PlainTextEditor
                 value={plainTextContent}
                 onChange={setPlainTextContent}
+                isDetecting={isDetecting}
+                hasResult={!!detectionResult}
                 onDetect={async () => {
                   if (!plainTextContent.trim()) {
                     setError('请先输入或导入文本内容')
@@ -809,13 +822,6 @@ function App() {
                 <option value="500">500字/块</option>
                 <option value="1000">1000字/块</option>
               </select>
-              <button
-                className="btn btn-secondary"
-                onClick={handleDetect}
-                disabled={isDetecting}
-              >
-                {isDetecting ? '检测中...' : '重新检测'}
-              </button>
             </div>
           </div>
           <div className="preview-content">
@@ -823,8 +829,8 @@ function App() {
           </div>
           <div className="status-bar">
             <div className="status-item">
-              <span className={`status-dot ${isReady ? 'ready' : 'loading'}`} />
-              <span>{isReady ? '就绪' : '加载中...'}</span>
+              <span className={`status-dot ${isReady || editorMode === 'plaintext' ? 'ready' : 'loading'}`} />
+              <span>{isReady || editorMode === 'plaintext' ? '就绪' : '加载中...'}</span>
             </div>
             {detectionResult && (
               <div className="status-item">
