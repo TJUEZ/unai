@@ -1,0 +1,108 @@
+<h2>AIGC检测编辑器 - 改进设计</h2>
+<p class="subtitle">请查看以下设计草图，点击选择你喜欢的方案</p>
+
+<div class="split" style="gap: 20px; margin-top: 20px;">
+  <!-- Left: Editor Panel -->
+  <div class="mockup" style="flex: 1;">
+    <div class="mockup-header">左侧：编辑区</div>
+    <div class="mockup-body" style="padding: 15px; background: #f5f5f5; min-height: 300px;">
+      <div style="background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <div style="font-size: 12px; color: #666; margin-bottom: 10px;">📄 SuperDoc 富文本编辑器</div>
+        <div style="line-height: 1.8; color: #333;">
+          <p>第一段文本内容...</p>
+          <p>第二段文本内容...</p>
+          <p>第三段文本内容（这里有高亮显示AI概率 85%）...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Preview Panel -->
+  <div class="mockup" style="flex: 1;">
+    <div class="mockup-header">右侧：检测结果预览</div>
+    <div class="mockup-body" style="padding: 15px; background: #f5f5f5; min-height: 300px;">
+      <!-- Chunk selector -->
+      <div style="background: white; border-radius: 8px; padding: 10px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <div style="font-size: 12px; color: #666; margin-bottom: 8px;">分块粒度:</div>
+        <div style="display: flex; gap: 8px;">
+          <button style="padding: 4px 12px; border: 1px solid #5b7cff; background: #5b7cff; color: white; border-radius: 4px; font-size: 12px;">原文</button>
+          <button style="padding: 4px 12px; border: 1px solid #ddd; background: white; color: #666; border-radius: 4px; font-size: 12px;">200字</button>
+          <button style="padding: 4px 12px; border: 1px solid #ddd; background: white; color: #666; border-radius: 4px; font-size: 12px;">500字</button>
+          <button style="padding: 4px 12px; border: 1px solid #ddd; background: white; color: #666; border-radius: 4px; font-size: 12px;">1000字</button>
+        </div>
+      </div>
+
+      <!-- Preview content with highlights -->
+      <div style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <div style="line-height: 2; color: #333;">
+          <span style="background: rgba(76, 175, 80, 0.2);">第一段文本内容...</span>
+          <span style="background: rgba(255, 193, 7, 0.2);">第二段文本 (AI概率 25%)...</span>
+          <span style="background: rgba(255, 152, 0, 0.2);">第三段文本 (AI概率 55%)...</span>
+          <span style="background: rgba(244, 67, 54, 0.2);">第四段文本 (AI概率 85%)...</span>
+        </div>
+      </div>
+
+      <!-- Color legend -->
+      <div style="margin-top: 10px; display: flex; gap: 15px; font-size: 11px;">
+        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 12px; background: rgba(76, 175, 80, 0.3); border-radius: 2px;"></span> 人类 (&lt;20%)</span>
+        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 12px; background: rgba(255, 193, 7, 0.3); border-radius: 2px;"></span> 低 (20-40%)</span>
+        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 12px; background: rgba(255, 152, 0, 0.3); border-radius: 2px;"></span> 中 (40-70%)</span>
+        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 12px; background: rgba(244, 67, 54, 0.3); border-radius: 2px;"></span> 高 (&gt;70%)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 20px;">
+  <h3>左侧工具栏新增功能</h3>
+  <div style="display: flex; gap: 20px; margin-top: 10px;">
+    <div style="flex: 1; background: #f0f0f0; padding: 15px; border-radius: 8px;">
+      <div style="font-size: 24px; margin-bottom: 5px;">📋</div>
+      <div style="font-weight: bold;">粘贴按钮</div>
+      <div style="font-size: 12px; color: #666;">点击直接读取剪贴板内容</div>
+    </div>
+    <div style="flex: 1; background: #f0f0f0; padding: 15px; border-radius: 8px;">
+      <div style="font-size: 24px; margin-bottom: 5px;">📄</div>
+      <div style="font-weight: bold;">打开文件</div>
+      <div style="font-size: 12px; color: #666;">导入 .docx / .txt 文件</div>
+    </div>
+    <div style="flex: 1; background: #f0f0f0; padding: 15px; border-radius: 8px;">
+      <div style="font-size: 24px; margin-bottom: 5px;">🔍</div>
+      <div style="font-weight: bold;">开始检测</div>
+      <div style="font-size: 12px; color: #666;">执行 AIGC 检测</div>
+    </div>
+    <div style="flex: 1; background: #f0f0f0; padding: 15px; border-radius: 8px;">
+      <div style="font-size: 24px; margin-bottom: 5px;">💾</div>
+      <div style="font-weight: bold;">导出</div>
+      <div style="font-size: 12px; color: #666;">保存为 docx/txt/md</div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 20px;">
+  <h3>功能说明</h3>
+  <ul style="margin-top: 10px; line-height: 1.8;">
+    <li><strong>分块粒度：</strong>选择原文/200字/500字/1000字，低于分块大小一半的段落会与前一段合并</li>
+    <li><strong>同步滚动：</strong>点击右侧任意段落，左侧编辑器自动定位到对应位置</li>
+    <li><strong>高亮显示：</strong>根据AI概率显示不同颜色（绿/黄/橙/红）</li>
+    <li><strong>粘贴功能：</strong>新增按钮可直接读取剪贴板文本内容</li>
+    <li><strong>滚动支持：</strong>左右两侧面板均可独立滚动</li>
+  </ul>
+</div>
+
+<div class="options" style="margin-top: 30px;">
+  <div class="option" data-choice="approved" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>设计确认</h3>
+      <p>以上设计符合预期，继续实现</p>
+    </div>
+  </div>
+  <div class="option" data-choice="modify" onclick="toggleSelect(this)">
+    <div class="letter">✎</div>
+    <div class="content">
+      <h3>需要修改</h3>
+      <p>对设计有调整意见，请在终端告诉我</p>
+    </div>
+  </div>
+</div>

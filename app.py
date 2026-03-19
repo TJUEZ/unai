@@ -94,45 +94,99 @@ def detect_aigc(text):
     return ai_prob
 
 def split_by_original_paragraphs(text):
-    """Split text by original newlines - keep original paragraph structure"""
+    """Split text by original newlines - keep original paragraph structure
+
+    Returns list of tuples: (start_pos, chunk_text)
+    """
     if not text:
         return []
+
     # Split by newlines only, keep empty lines as separators
     paragraphs = re.split(r'\n+', text)
-    return [p.strip() for p in paragraphs if p.strip()]
+
+    result = []
+    current_pos = 0
+
+    for para in paragraphs:
+        para = para.strip()
+        if not para:
+            # Skip empty paragraphs but track position
+            current_pos += len(para) + 1  # +1 for newline
+            continue
+
+        # Find the start position in original text
+        start_pos = text.find(para, current_pos)
+        if start_pos == -1:
+            start_pos = current_pos
+
+        result.append((start_pos, para))
+        current_pos = start_pos + len(para) + 1
+
+    return result
 
 def split_by_paragraphs(text, min_chunk_size=100):
-    """Split text into chunks, preserving paragraphs and sentence boundaries"""
+    """Split text into chunks, preserving paragraphs and sentence boundaries
+
+    Returns list of tuples: (start_pos, chunk_text)
+    """
     if not text:
         return []
 
     # Split by double newlines to get paragraphs
-    paragraphs = re.split(r'\n\s*\n', text)
-    paragraphs = [p.strip() for p in paragraphs if p.strip()]
+    paragraphs_info = []
+    current_pos = 0
 
-    if not paragraphs:
-        # No paragraphs, try single newlines
-        paragraphs = re.split(r'\n+', text)
-        paragraphs = [p.strip() for p in paragraphs if p.strip()]
+    # Find all paragraphs with their positions
+    para_pattern = re.compile(r'\n\s*\n')
+    last_end = 0
 
-    if not paragraphs:
+    for match in para_pattern.finditer(text):
+        para_text = text[last_end:match.start()].strip()
+        if para_text:
+            start = text.find(para_text, last_end)
+            if start == -1:
+                start = last_end
+            paragraphs_info.append((start, para_text))
+        last_end = match.end()
+
+    # Handle remaining text after last double newline
+    remaining = text[last_end:].strip()
+    if remaining:
+        start = text.find(remaining, last_end)
+        if start == -1:
+            start = last_end
+        paragraphs_info.append((start, remaining))
+
+    # If no double newlines, try single newlines
+    if not paragraphs_info:
+        lines = text.split('\n')
+        for line in lines:
+            line = line.strip()
+            if line:
+                start = text.find(line, current_pos)
+                if start == -1:
+                    start = current_pos
+                paragraphs_info.append((start, line))
+                current_pos = start + len(line)
+
+    if not paragraphs_info:
         return []
 
     # If total text is smaller than 1.3x target, don't split
-    total_len = sum(len(p) for p in paragraphs)
+    total_len = sum(len(p[1]) for p in paragraphs_info)
     if total_len < min_chunk_size * 1.3:
-        return paragraphs
+        return paragraphs_info
 
     chunks = []
 
-    for para in paragraphs:
+    for para_start, para in paragraphs_info:
         para = para.strip()
         if not para:
             continue
 
         # Skip paragraphs smaller than half the target - keep as-is
         if len(para) < min_chunk_size * 0.5:
-            chunks.append(para)
+            chunks.append((para_start, para))
             continue
 
         # Split paragraph into sentences (preserving punctuation)
@@ -144,47 +198,59 @@ def split_by_paragraphs(text, min_chunk_size=100):
 
         # Group sentences into chunks targeting min_chunk_size
         current_chunk = ""
+        current_start = para_start
         for sent in sentences:
             if not current_chunk:
                 current_chunk = sent
+                # Find start position of this sentence in original text
+                sent_start = para.find(sent)
+                if sent_start >= 0:
+                    current_start = para_start + sent_start
             elif len(current_chunk) + len(sent) <= min_chunk_size:
                 current_chunk += " " + sent
             elif len(sent) >= min_chunk_size:
                 if current_chunk:
-                    chunks.append(current_chunk)
+                    chunks.append((current_start, current_chunk))
                 current_chunk = sent
+                sent_start = para.find(sent)
+                if sent_start >= 0:
+                    current_start = para_start + sent_start
             else:
                 if len(current_chunk) + len(sent) <= min_chunk_size * 1.15:
                     current_chunk += " " + sent
                 else:
-                    chunks.append(current_chunk)
+                    chunks.append((current_start, current_chunk))
                     current_chunk = sent
+                    sent_start = para.find(sent)
+                    if sent_start >= 0:
+                        current_start = para_start + sent_start
 
         if current_chunk:
-            chunks.append(current_chunk)
+            chunks.append((current_start, current_chunk))
 
-    # Merge small chunks - be more aggressive
-    # If chunk is less than 50% of target, try to merge with neighbor
+    # Merge small chunks
     small_threshold = min_chunk_size * 0.5
 
     result = []
     i = 0
     while i < len(chunks):
-        chunk = chunks[i]
+        chunk_start, chunk = chunks[i]
 
         if len(chunk) < small_threshold:
             # Try merge with previous
-            if result and len(result[-1]) + len(chunk) <= min_chunk_size * 1.4:
-                result[-1] = result[-1] + " " + chunk
+            if result and len(result[-1][1]) + len(chunk) <= min_chunk_size * 1.4:
+                prev_start, prev_text = result[-1]
+                result[-1] = (prev_start, prev_text + " " + chunk)
                 i += 1
                 continue
             # Try merge with next
-            if i + 1 < len(chunks) and len(chunk) + len(chunks[i + 1]) <= min_chunk_size * 1.4:
-                result.append(chunk + " " + chunks[i + 1])
+            if i + 1 < len(chunks) and len(chunk) + len(chunks[i + 1][1]) <= min_chunk_size * 1.4:
+                next_start, next_text = chunks[i + 1]
+                result.append((chunk_start, chunk + " " + next_text))
                 i += 2
                 continue
 
-        result.append(chunk)
+        result.append((chunk_start, chunk))
         i += 1
 
     return result
@@ -409,14 +475,23 @@ def detect_full():
             return jsonify({'success': False, 'error': '文本分割失败'}), 400
 
         results = []
-        for i, chunk in enumerate(chunks):
-            probability = detect_chunk(chunk)
+        for i, chunk_data in enumerate(chunks):
+            # Handle both old format (just text) and new format (start_pos, text)
+            if isinstance(chunk_data, tuple):
+                start_pos, chunk_text = chunk_data
+            else:
+                start_pos = 0
+                chunk_text = chunk_data
+
+            probability = detect_chunk(chunk_text)
             if probability is not None:
                 results.append({
                     'index': i,
-                    'text': chunk,
+                    'text': chunk_text,
                     'probability': probability,
-                    'text_length': len(chunk)
+                    'text_length': len(chunk_text),
+                    'start_pos': start_pos,
+                    'end_pos': start_pos + len(chunk_text)  # 添加结束位置
                 })
 
         # Calculate weighted overall probability by text length
