@@ -158,6 +158,37 @@ const getAILevel = (probability: number): 'high' | 'medium' | 'low' | 'human' =>
   return 'human'
 }
 
+const WordWarningModal = ({
+  onConfirm,
+  onCancel
+}: {
+  onConfirm: () => void
+  onCancel: () => void
+}) => {
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <span className="modal-icon">⚠️</span>
+          <span className="modal-title">提示</span>
+        </div>
+        <div className="modal-body">
+          <p className="modal-message">Word 模式跳转功能正在修复中</p>
+          <p className="modal-detail">当前问题：点击右侧分块无法跳转到左侧 Word 编辑器的对应位置</p>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-primary" onClick={onConfirm}>
+            仍然切换到 Word 模式（编辑功能可用）
+          </button>
+          <button className="btn btn-secondary" onClick={onCancel}>
+            留在纯文本模式
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const [docFile, setDocFile] = useState<File | null>(null)
   const [mode] = useState<'editing' | 'viewing' | 'suggesting'>('editing')
@@ -622,6 +653,17 @@ function App() {
           {theme === 'light' ? <IconMoon /> : <IconSun />}
         </button>
       </aside>
+
+      {/* Word模式警告弹窗 */}
+      {showWordWarning && (
+        <WordWarningModal
+          onConfirm={() => {
+            setEditorMode('word')
+            setShowWordWarning(false)
+          }}
+          onCancel={() => setShowWordWarning(false)}
+        />
+      )}
 
       {/* 主区域 */}
       <div className="main-area">
