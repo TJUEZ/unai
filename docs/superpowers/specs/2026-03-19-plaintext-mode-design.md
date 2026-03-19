@@ -63,6 +63,19 @@
 └─────────────────────────────────────────────┘
 ```
 
+**按钮行为：**
+- 「仍然切换到 Word 模式」→ 关闭弹窗，切换 `editorMode` 为 `'word'`
+- 「留在纯文本模式」→ 仅关闭弹窗，保持 `editorMode` 为 `'plaintext'`
+
+### 模式切换注意事项
+
+| 场景 | 处理方式 |
+|------|----------|
+| 纯文本 → Word（有内容） | 弹出警告，用户确认后切换 |
+| Word → 纯文本 | 直接切换（暂不提示丢失风险） |
+| 切换后检测结果 | 保留，不丢失 |
+| 模式选择持久化 | 保存到 localStorage，下次回想起上次选择 |
+
 ### 状态管理
 
 新增 state：
@@ -78,25 +91,30 @@
 
 ### 实现步骤
 
-1. 创建模式切换按钮（纯文本/Word）
-2. 创建警告弹窗组件
-3. 添加纯文本模式的 textarea 编辑器 UI
-4. 实现模式切换逻辑与弹窗交互
-5. 更新样式支持纯文本模式布局
+1. 创建 `IconPlainText` SVG 图标（复用现有 SVG 风格）
+2. 创建模式切换按钮组件 `ModeToggle`（位于导出与主题之间）
+3. 创建警告弹窗组件 `WordWarningModal`
+4. 添加纯文本模式的 `textarea` 编辑器 UI
+5. 实现模式切换逻辑与弹窗交互
+6. 更新样式支持纯文本模式布局
+7. 模式选择保存到 localStorage
 
 ## 组件清单
 
 | 组件 | 用途 |
 |------|------|
+| `IconPlainText` | 纯文本模式 SVG 图标（与现有 SVG 风格一致） |
 | `ModeToggle` | 模式切换按钮组 |
 | `WordWarningModal` | Word 模式警告弹窗 |
-| `PlainTextEditor` | 纯文本输入区域 |
+| `PlainTextEditor` | 纯文本输入区域（textarea） |
 
 ## 状态定义
 
 ```typescript
 interface AppState {
-  editorMode: 'plaintext' | 'word'  // 默认 'plaintext'
-  showWordWarning: boolean            // 弹窗显示状态
+  editorMode: 'plaintext' | 'word'  // 默认 'plaintext'，从 localStorage 恢复
+  showWordWarning: boolean          // 弹窗显示状态
+  // 保留现有状态...
+  plainTextContent: string           // 纯文本模式下的内容
 }
 ```
