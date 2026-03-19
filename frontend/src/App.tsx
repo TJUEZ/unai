@@ -801,7 +801,7 @@ function App() {
         />
 
         {/* 预览面板 */}
-        <div className="preview-panel">
+        <div className="preview-panel" style={{ width: `${(1 - splitRatio) * 100}%` }}>
           <div className="panel-header">
             <span className="panel-title">检测结果</span>
           </div>
