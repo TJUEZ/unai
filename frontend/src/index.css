@@ -532,6 +532,15 @@ body {
   font-size: 12px;
 }
 
+/* 字数显示 */
+.word-count-display {
+  padding: 4px 10px;
+  background: var(--theme-bg-secondary);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--theme-text-soft);
+}
+
 /* 整体概率 */
 .overall-probability {
   display: flex;
@@ -862,7 +871,6 @@ body {
   flex-direction: column;
   height: 100%;
   padding: 16px;
-  gap: 12px;
 }
 
 .plaintext-textarea {

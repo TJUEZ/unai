@@ -191,16 +191,10 @@ const WordWarningModal = ({
 
 const PlainTextEditor = ({
   value,
-  onChange,
-  onDetect,
-  isDetecting,
-  hasResult
+  onChange
 }: {
   value: string
   onChange: (text: string) => void
-  onDetect: () => void
-  isDetecting: boolean
-  hasResult: boolean
 }) => {
   return (
     <div className="plaintext-editor">
@@ -211,25 +205,6 @@ const PlainTextEditor = ({
         placeholder="请在此输入或粘贴需要检测的文本..."
         spellCheck={false}
       />
-      <div className="plaintext-actions">
-        <button
-          className="btn btn-secondary"
-          onClick={() => {
-            const totalChars = value.length
-            const chunks = Math.ceil(totalChars / 500)
-            alert(`总计 ${totalChars} 字，预计分为 ${chunks} 个段落进行检测`)
-          }}
-        >
-          字数统计
-        </button>
-        <button
-          className="btn btn-primary"
-          onClick={onDetect}
-          disabled={isDetecting || !value.trim()}
-        >
-          {isDetecting ? '检测中...' : (hasResult ? '重新检测' : '开始检测')}
-        </button>
-      </div>
     </div>
   )
 }
@@ -626,14 +601,6 @@ function App() {
         <div className="sidebar-divider" />
 
         <ToolbarButton
-          icon={<IconSearch />}
-          label="检测"
-          ariaLabel={isDetecting ? "检测中" : "开始AI检测"}
-          onClick={handleDetect}
-          disabled={isDetecting}
-        />
-
-        <ToolbarButton
           icon={<IconChart />}
           label="统计"
           ariaLabel="查看检测统计"
@@ -724,23 +691,44 @@ function App() {
           <div className="panel-header">
             <span className="panel-title">文档编辑</span>
             <div className="detection-bar">
-              {detectionResult && (
-                <>
-                  <div className="overall-probability" role="status" aria-live="polite">
-                    <span>AI概率:</span>
-                    <div className="probability-bar" role="progressbar" aria-valuenow={Math.round(detectionResult.overall_probability * 100)} aria-valuemin={0} aria-valuemax={100}>
-                      <div
-                        className="probability-fill"
-                        style={{ width: `${detectionResult.overall_probability * 100}%` }}
-                      />
-                    </div>
-                    <span>{(detectionResult.overall_probability * 100).toFixed(1)}%</span>
-                  </div>
-                </>
+              {/* 字数显示 - 实时计算 */}
+              {editorMode === 'plaintext' ? (
+                <span className="word-count-display">{plainTextContent.length} 字</span>
+              ) : (
+                <span className="word-count-display">{editorPlainText.length} 字</span>
               )}
+
+              {/* 分块大小选择器 - 从右侧移到此位置 */}
+              <select
+                value={chunkSize}
+                onChange={(e) => setChunkSize(e.target.value)}
+                className="model-select"
+                aria-label="分块大小"
+              >
+                <option value="original">原文</option>
+                <option value="200">200字/块</option>
+                <option value="500">500字/块</option>
+                <option value="1000">1000字/块</option>
+              </select>
+
+              {/* 检测按钮 */}
               <button className="btn btn-primary" onClick={handleDetect} disabled={isDetecting}>
                 {isDetecting ? '检测中...' : (detectionResult ? '重新检测' : '开始检测')}
               </button>
+
+              {/* AI概率条 - 仅在检测后显示 */}
+              {detectionResult && (
+                <div className="overall-probability" role="status" aria-live="polite">
+                  <span>AI概率:</span>
+                  <div className="probability-bar" role="progressbar" aria-valuenow={Math.round(detectionResult.overall_probability * 100)} aria-valuemin={0} aria-valuemax={100}>
+                    <div
+                      className="probability-fill"
+                      style={{ width: `${detectionResult.overall_probability * 100}%` }}
+                    />
+                  </div>
+                  <span>{(detectionResult.overall_probability * 100).toFixed(1)}%</span>
+                </div>
+              )}
             </div>
           </div>
           {error && (
@@ -753,26 +741,6 @@ function App() {
               <PlainTextEditor
                 value={plainTextContent}
                 onChange={setPlainTextContent}
-                isDetecting={isDetecting}
-                hasResult={!!detectionResult}
-                onDetect={async () => {
-                  if (!plainTextContent.trim()) {
-                    setError('请先输入或导入文本内容')
-                    return
-                  }
-                  setIsDetecting(true)
-                  setError(null)
-                  try {
-                    setEditorPlainText(plainTextContent)
-                    const result = await detectAPI(plainTextContent, chunkSize)
-                    setDetectionResult(result)
-                  } catch (err) {
-                    const errorMessage = err instanceof Error ? err.message : '检测失败，请稍后重试'
-                    setError(errorMessage)
-                  } finally {
-                    setIsDetecting(false)
-                  }
-                }}
               />
             ) : docFile ? (
               <>
@@ -810,19 +778,6 @@ function App() {
         <div className="preview-panel">
           <div className="panel-header">
             <span className="panel-title">检测结果</span>
-            <div className="detection-bar">
-              <select
-                value={chunkSize}
-                onChange={(e) => setChunkSize(e.target.value)}
-                className="model-select"
-                aria-label="分块大小"
-              >
-                <option value="original">原文</option>
-                <option value="200">200字/块</option>
-                <option value="500">500字/块</option>
-                <option value="1000">1000字/块</option>
-              </select>
-            </div>
           </div>
           <div className="preview-content">
             {renderPreview()}
