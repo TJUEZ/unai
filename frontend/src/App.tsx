@@ -581,6 +581,38 @@ function App() {
 
         <div className="sidebar-divider" />
 
+        {/* 模式切换 - 位于导出和主题之间 */}
+        <div className="mode-toggle">
+          <button
+            className={`mode-btn ${editorMode === 'plaintext' ? 'active' : ''}`}
+            onClick={() => {
+              if (editorMode !== 'plaintext') {
+                setEditorMode('plaintext')
+              }
+            }}
+            aria-label="纯文本模式"
+            title="纯文本模式"
+          >
+            <IconPlainText />
+            <span>纯文本</span>
+          </button>
+          <button
+            className={`mode-btn ${editorMode === 'word' ? 'active' : ''}`}
+            onClick={() => {
+              if (editorMode !== 'word') {
+                setShowWordWarning(true)
+              }
+            }}
+            aria-label="Word模式"
+            title="Word模式"
+          >
+            <IconFile />
+            <span>Word</span>
+          </button>
+        </div>
+
+        <div className="sidebar-divider" />
+
         {/* 主题切换 */}
         <button
           className="theme-toggle"
