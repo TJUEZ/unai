@@ -57,6 +57,15 @@ const IconMoon = () => (
   </svg>
 )
 
+const IconPlainText = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="17" y1="10" x2="3" y2="10" />
+    <line x1="21" y1="6" x2="3" y2="6" />
+    <line x1="21" y1="14" x2="3" y2="14" />
+    <line x1="17" y1="18" x2="3" y2="18" />
+  </svg>
+)
+
 // 类型定义
 interface ChunkDetection {
   text: string
@@ -64,6 +73,7 @@ interface ChunkDetection {
   index: number
   text_length: number
   start_pos: number
+  end_pos?: number
 }
 
 interface DetectionResult {
@@ -162,6 +172,12 @@ function App() {
   const [detectingChunk, setDetectingChunk] = useState<number | null>(null)
   const [editingChunk, setEditingChunk] = useState<number | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [editorMode, setEditorMode] = useState<'plaintext' | 'word'>(() => {
+    const saved = localStorage.getItem('editorMode')
+    return (saved === 'word' ? 'word' : 'plaintext')
+  })
+  const [showWordWarning, setShowWordWarning] = useState(false)
+  const [plainTextContent, setPlainTextContent] = useState('')
 
   const editorRef = useRef<SuperDocRef>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -178,30 +194,15 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    localStorage.setItem('editorMode', editorMode)
+  }, [editorMode])
+
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light'
     setTheme(newTheme)
     localStorage.setItem('theme', newTheme)
     document.documentElement.setAttribute('data-theme', newTheme)
-  }
-
-  // 文本规范化
-  const normalizeText = (text: string): string => {
-    return text.replace(/[\s\n\r]+/g, ' ').trim()
-  }
-
-  const fuzzyMatch = (source: string, target: string): number => {
-    const s = normalizeText(source)
-    const t = normalizeText(target)
-    if (!s || !t) return 0
-    const minLen = Math.min(s.length, t.length)
-    const maxLen = Math.max(s.length, t.length)
-    if (maxLen === 0) return 1
-    let matches = 0
-    for (let i = 0; i < minLen; i++) {
-      if (s[i] === t[i]) matches++
-    }
-    return matches / maxLen
   }
 
   const scrollToChunk = useCallback((index: number) => {
@@ -211,67 +212,84 @@ function App() {
     const chunk = detectionResult.chunks[index]
     if (!chunk) return
 
-    const chunkStartPos = chunk.start_pos || 0
-    const chunkText = chunk.text.trim()
+    const targetText = chunk.text
+    if (!targetText) return
 
-    let editorText = ''
-    if (typeof instance.getText === 'function') {
-      editorText = instance.getText()
-    }
-    if (!editorText && editorPlainText) {
-      editorText = editorPlainText
-    }
-
-    if (!editorText) return
-
-    const searchRadius = 50
-    let foundPos = -1
-    const searchText = chunkText.substring(0, 50)
-
-    for (let offset = 0; offset <= searchRadius; offset++) {
-      const pos1 = chunkStartPos + offset
-      if (pos1 + searchText.length <= editorText.length) {
-        const candidate = editorText.substring(pos1, pos1 + searchText.length)
-        if (fuzzyMatch(candidate, searchText) > 0.85) {
-          foundPos = pos1
-          break
+    // 方法1: 尝试使用 SuperDoc 的搜索 API 直接搜索并跳转
+    try {
+      if (typeof instance.search === 'function') {
+        const results = instance.search(targetText)
+        if (results && results.length > 0) {
+          const match = results[0]
+          if (typeof instance.goToSearchResult === 'function') {
+            instance.goToSearchResult(match)
+            return
+          }
         }
       }
-      const pos2 = chunkStartPos - offset
-      if (pos2 >= 0 && pos2 + searchText.length <= editorText.length) {
-        const candidate = editorText.substring(pos2, pos2 + searchText.length)
-        if (fuzzyMatch(candidate, searchText) > 0.85) {
-          foundPos = pos2
-          break
+    } catch (e) {
+      console.warn('SuperDoc search navigation failed:', e)
+    }
+
+    // 方法2: 尝试使用 scrollToPosition (ProseMirror 位置)
+    try {
+      const activeEditor = (instance as any)?.activeEditor
+      if (activeEditor) {
+        // 获取编辑器纯文本
+        let editorText = ''
+        if (typeof instance.getText === 'function') {
+          editorText = instance.getText()
         }
-      }
-    }
 
-    if (foundPos === -1) {
-      const normalizedEditor = normalizeText(editorText)
-      const normalizedChunk = normalizeText(searchText)
-      foundPos = normalizedEditor.indexOf(normalizedChunk)
-    }
+        // 使用后端返回的 start_pos 找到目标位置
+        const targetStartPos = chunk.start_pos || 0
+        let targetPosInEditor = -1
 
-    if (foundPos === -1) {
-      // @ts-ignore
-      if (instance.search && chunk.text) {
-        const searchText2 = chunk.text.substring(0, 30).trim()
-        if (searchText2.length >= 5) {
-          try {
-            // @ts-ignore
-            const results = instance.search(searchText2, { highlight: true })
-            if (results && results.length > 0) {
-              // @ts-ignore
-              instance.goToSearchResult?.(results[0])
-              return
+        // 验证 start_pos 是否有效
+        if (targetStartPos >= 0 && targetStartPos < editorText.length) {
+          const editorChunk = editorText.substring(targetStartPos, targetStartPos + targetText.length)
+          if (editorChunk === targetText) {
+            targetPosInEditor = targetStartPos
+          }
+        }
+
+        // 如果后端位置不匹配，使用模糊搜索
+        if (targetPosInEditor === -1) {
+          const searchRadius = 50
+          for (let i = Math.max(0, targetStartPos - searchRadius); i <= Math.min(editorText.length - targetText.length, targetStartPos + searchRadius); i++) {
+            if (editorText.substring(i, i + targetText.length) === targetText) {
+              targetPosInEditor = i
+              break
             }
-          } catch (e) {}
+          }
+        }
+
+        // 尝试滚动
+        if (targetPosInEditor >= 0) {
+          if (activeEditor.scrollToPositionAsync) {
+            activeEditor.scrollToPositionAsync(targetPosInEditor, { block: 'center', behavior: 'smooth' })
+            return
+          }
+          if (activeEditor.scrollToPosition) {
+            activeEditor.scrollToPosition(targetPosInEditor, { block: 'center', behavior: 'smooth' })
+            return
+          }
         }
       }
+    } catch (e) {
+      console.warn('scrollToPosition method failed:', e)
     }
 
-  }, [detectionResult, editorPlainText])
+    // 最终 fallback: 聚焦编辑器
+    try {
+      if (typeof instance.focus === 'function') {
+        instance.focus()
+      }
+    } catch (e) {
+      console.warn('Editor focus failed:', e)
+    }
+
+  }, [detectionResult])
 
   const handleDetect = useCallback(async () => {
     const instance = editorRef.current?.getInstance()
