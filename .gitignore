@@ -25,6 +25,7 @@ htmlcov/
 
 # Claude
 .claude/
+.superpowers/
 
 # Temp files
 *.log

@@ -22,7 +22,6 @@
 ### 方式一：使用启动脚本（Windows 推荐）
 
 ```bash
-# 双击运行 start.bat 或在命令行执行
 start.bat
 ```
 
@@ -76,6 +75,8 @@ npm run dev
 
 打开浏览器访问: http://localhost:5173
 
+> **注意**：首次启动时模型加载需要 10-30 秒，请耐心等待。
+
 ## 项目结构
 
 ```
@@ -87,9 +88,10 @@ AIGC_detector_zhv3/
 ├── frontend/                   # React 前端
 │   ├── src/
 │   │   ├── App.tsx           # 主应用组件
-│   │   └── index.css         # 样式文件（墨审主题）
+│   │   └── index.css         # 样式文件
+│   ├── node_modules/         # 前端依赖（npm install 后生成）
 │   └── dist/                  # 构建输出目录
-├── pytorch_model.bin          # 模型权重
+├── pytorch_model.bin          # 模型权重（约 400MB）
 ├── config.json                # 模型配置
 ├── tokenizer_config.json      # 分词器配置
 ├── vocab.txt                  # 词汇表

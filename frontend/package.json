@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@superdoc-dev/react": "file:../superdoc/packages/react",
-    "superdoc": "file:../superdoc/packages/superdoc",
+    "@superdoc-dev/react": "^1.0.0-rc.2",
+    "superdoc": "^1.20.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
