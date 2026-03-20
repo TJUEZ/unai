@@ -532,6 +532,66 @@ def detect_chunk_endpoint():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/system-info', methods=['GET'])
+def get_system_info():
+    """获取系统状态信息"""
+    try:
+        import psutil
+        import platform
+
+        # CPU 信息
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        cpu_count = psutil.cpu_count()
+
+        # 内存信息
+        memory = psutil.virtual_memory()
+        memory_used_gb = memory.used / (1024 ** 3)
+        memory_total_gb = memory.total / (1024 ** 3)
+        memory_percent = memory.percent
+
+        # GPU 信息 (如果可用)
+        gpu_info = None
+        if torch.cuda.is_available():
+            gpu_name = torch.cuda.get_device_name(0)
+            gpu_memory_allocated = torch.cuda.memory_allocated(0) / (1024 ** 3)
+            gpu_memory_reserved = torch.cuda.memory_reserved(0) / (1024 ** 3)
+            gpu_memory_total = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)
+            gpu_info = {
+                'name': gpu_name,
+                'memory_allocated_gb': round(gpu_memory_allocated, 2),
+                'memory_reserved_gb': round(gpu_memory_reserved, 2),
+                'memory_total_gb': round(gpu_memory_total, 2)
+            }
+
+        # 模型状态
+        model_loaded = model is not None
+
+        # 平台信息
+        system_info = {
+            'platform': platform.platform(),
+            'python_version': platform.python_version()
+        }
+
+        return jsonify({
+            'success': True,
+            'cpu': {
+                'percent': cpu_percent,
+                'count': cpu_count
+            },
+            'memory': {
+                'used_gb': round(memory_used_gb, 1),
+                'total_gb': round(memory_total_gb, 1),
+                'percent': memory_percent
+            },
+            'gpu': gpu_info,
+            'model': {
+                'loaded': model_loaded
+            },
+            'system': system_info
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 if __name__ == '__main__':
     load_model()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)

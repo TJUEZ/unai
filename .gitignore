@@ -5,6 +5,7 @@ __pycache__/
 *.so
 .Python
 venv/
+venv_web/
 env/
 ENV/
 *.egg-info/
@@ -25,15 +26,18 @@ htmlcov/
 # Claude
 .claude/
 
-# Docs (development only)
-docs/
-
 # Temp files
 *.log
 *.tmp
+*.bak
 test.txt
 test.docx
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Local backups
+templates_flask_backup/
+AIGC_text_detector/
+llmfit/
